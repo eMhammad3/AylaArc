@@ -1,0 +1,7 @@
+streamlit
+openai
+supabase
+python-dotenv
+google-generativeai
+Pillow
+watchdog
