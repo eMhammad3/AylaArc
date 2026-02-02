@@ -62,117 +62,160 @@ if 'edit_index' not in st.session_state:
 
 # تعريف المراحل
 phases = {
-    "Phase 1": "1️⃣ Site & Research (Active)",
-    "Phase 2": "2️⃣ Concept & Zoning (Soon)",
-    "Phase 3": "3️⃣ Sketches & Freehand (Locked)",
-    "Phase 4": "4️⃣ 2D Drafting / Plans (Locked)",
-    "Phase 5": "5️⃣ 3D Modeling (Locked)",
-    "Phase 6": "6️⃣ Visualization (Locked)",
-    "Phase 7": "7️⃣ Physical Model (Locked)",
-    "Phase 8": "8️⃣ Jury & Marketing (Locked)"
+    "1️⃣ تحليل الموقع (Site Analysis)": "1️⃣ Site & Research (Active)",
+    "2️⃣ الفكرة والتوزيع (Concept & Zoning)": "2️⃣ Concept & Zoning (Soon)",
+    "3️⃣ السكيتشات (Sketches)": "3️⃣ Sketches & Freehand (Locked)",
+    "4️⃣ المخططات (2D Plans)": "4️⃣ 2D Drafting / Plans (Locked)",
+    "5️⃣ المودل (3D Modeling)": "5️⃣ 3D Modeling (Locked)",
+    "6️⃣ الإظهار المعماري (Visualization)": "6️⃣ Visualization (Locked)",
+    "7️⃣ الماكيت (Physical Model)": "7️⃣ Physical Model (Locked)",
+    "8️⃣ التحكيم والتسليم (Jury & Submission)": "8️⃣ Jury & Marketing (Locked)"
 }
 
-# 3. الستايل (CSS) - النسخة الاحترافية (Glassmorphism & Neon)
+# 3. الستايل (CSS) - النسخة "الهندسية" (Industrial & Professional Look)
 st.markdown("""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap');
+        /* استيراد خط IBM Plex Sans Arabic (طابع هندسي تقني) */
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;600&display=swap');
         
-        /* 1. الخلفية العامة (الفخامة الأصلية محفوظة) */
-        .stApp {
-            background: radial-gradient(circle at 10% 20%, #1a1a1a 0%, #000000 90%);
-            font-family: 'Tajawal', sans-serif;
+        /* 1. أساسيات الصفحة */
+        html, body, [class*="css"] {
+            font-family: 'IBM Plex Sans Arabic', sans-serif; /* الخط الجديد */
+            background-color: #0E0E0E; /* لون أغمق قليلاً للفخامة */
+            scroll-behavior: smooth;
         }
-
-        /* 2. النصوص والاتجاهات */
         [data-testid="stAppViewContainer"] { direction: ltr !important; }
+        
         h1, h2, h3, h4, .stCaption, p, div, label, .stTextInput, .stTextArea {
             direction: rtl;
             text-align: right;
         }
 
-        /* 3. العناوين (الذهب والأبيض محفوظ) */
-        h1 {
-            background: -webkit-linear-gradient(45deg, #fca311, #fff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: 800 !important;
-            padding-bottom: 10px;
+        /* 2. سكرول بار رفيع جداً */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0E0E0E; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #666; }
+
+        /* 3. أنيميشن هادئ */
+        @keyframes fadeInSlide {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* 4. البطاقات الزجاجية (التاثير الزجاجي محفوظ) */
-        div[data-testid="stVerticalBlockBorderWrapper"] {
-            background-color: rgba(255, 255, 255, 0.03) !important;
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
-            backdrop-filter: blur(10px);
-            border-radius: 16px !important;
-            padding: 20px !important;
-            transition: all 0.3s ease;
-        }
-
-        /* 5. فقاعات الشات (تم تحرير العرض لتأخذ راحتها 100%) */
+        /* 4. الحاوية العامة للرسائل */
         div[data-testid="stChatMessage"] {
-            background-color: rgba(255, 255, 255, 0.05) !important;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 20px !important;
-            padding: 15px !important;
-            /* التعديل الجوهري: إزالة قيود العرض */
-            width: 100% !important; 
-            max-width: 100% !important;
-        }
-        div[data-testid="stChatMessage"]:has(.user-marker) {
-            background: linear-gradient(135deg, #0095F6 0%, #005c99 100%) !important;
+            display: flex !important;
+            gap: 15px !important;
+            align-items: flex-start !important;
+            animation: fadeInSlide 0.3s ease-out;
+            padding: 0 !important;
+            background-color: transparent !important;
             border: none !important;
+            box-shadow: none !important;
+        }
+        
+        div[data-testid="stChatMessage"] * {
+            direction: rtl !important;
+            text-align: right !important;
+            line-height: 1.7 !important; /* مسافة بين الأسطر للقراءة المريحة */
+            font-weight: 300 !important; /* خط أنحف للأناقة */
+        }
+        
+        .user-marker, .assistant-marker { display: none; }
+        
+        /* ============================================================
+           👤 تنسيق المهندسة (User) - ستايل "Modern Dark"
+           ============================================================ */
+        div[data-testid="stChatMessage"]:has(.user-marker) {
+            margin-right: auto !important; margin-left: 0 !important;
+            flex-direction: row-reverse !important;
+            
+            /* خلفية زرقاء داكنة مطفية (Matte Blue) */
+            background-color: #0056b3 !important; 
+            color: #E0E0E0 !important;
+            
+            /* حواف حادة هندسية بدلاً من الدائرية */
+            border-radius: 8px !important; 
+            border-top-right-radius: 0 !important; /* حركة جمالية */
+            
+            padding: 12px 20px !important;
+            width: fit-content !important;
+            max-width: 80% !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+        }
+        
+        div[data-testid="stChatMessage"]:has(.user-marker) p { color: #E0E0E0 !important; }
+
+        /* ============================================================
+           🏛️ تنسيق المديرة (AI) - تحرير المساحة
+           ============================================================ */
+        div[data-testid="stChatMessage"]:has(.assistant-marker) {
+            margin-left: auto !important; margin-right: 0 !important;
+            flex-direction: row !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            background-color: transparent !important;
+            border: none !important;
+            padding-top: 10px !important;
         }
 
-        /* 6. شريط الكتابة (Floating & Default) */
+        /* 5. شريط الكتابة */
         [data-testid="stChatInput"] {
+            left: 60px !important; 
+            width: calc(100% - 70px) !important; 
             background-color: transparent !important;
         }
+
         [data-testid="stChatInput"] textarea {
-            background-color: #1a1a1a !important;
+            background-color: #1A1A1A !important;
             border: 1px solid #333 !important;
-            border-radius: 25px !important;
+            color: white !important;
+            border-radius: 8px !important; /* حواف حادة */
+        }
+        
+        [data-testid="stChatInput"] textarea:focus {
+            border-color: #fca311 !important;
+            box-shadow: none !important; /* إزالة التوهج للحفاظ على المينيماليزم */
         }
 
-        /* 7. إعادة ترسيت الدبوس (إزالة الـ Fixed والـ 491px) */
+        /* الدبوس */
         [data-testid="stPopover"] {
-            position: relative !important;
-            width: auto !important;
-            bottom: auto !important;
-            left: auto !important;
+            position: fixed !important;
+            bottom: 15px !important;
+            left: 15px !important;   
+            z-index: 999999 !important;
+            width: 50px !important;
+            height: 50px !important;
         }
+
         [data-testid="stPopover"] > button {
-            background-color: #1a1a1a !important;
+            background-color: #1A1A1A !important;
             border: 1px solid #333 !important;
             color: #fca311 !important;
-            border-radius: 50% !important;
-            width: 45px !important; height: 45px !important;
+            border-radius: 8px !important; /* مربع بحواف ناعمة قليلاً بدلاً من دائرة */
+            width: 48px !important;
+            height: 48px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        
+        [data-testid="stPopover"] > button:hover {
+            border-color: #fca311 !important;
+            color: #fff !important;
         }
 
-        /* 8. ستايل القائمة الجانبية الفخم (المحفوظ بالكامل) */
-        section[data-testid="stSidebar"] {
-            background-color: #0a0a0a !important;
-            border-left: 1px solid #333;
-        }
-        section[data-testid="stSidebar"] .stButton button {
-            background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%) !important;
-            border: 1px solid #444 !important;
-            color: #ccc !important;
-        }
-        section[data-testid="stSidebar"] .stButton button:hover {
-            background: linear-gradient(135deg, #fca311 0%, #d48806 100%) !important;
-            color: #000 !important;
-            box-shadow: 0 4px 15px rgba(252, 163, 17, 0.4) !important;
-        }
-
-        /* إخفاء الزوائد */
-        .user-marker, .assistant-marker { display: none; }
-        header, footer { visibility: hidden; }
-
-        /* تعديلات الموبايل الذكية */
-        @media only screen and (max-width: 768px) {
-            .block-container { padding: 1rem !important; }
-            h1 { font-size: 1.8rem !important; }
+        section[data-testid="stSidebar"] { display: none; }
+        .tiny-btn button { background: transparent !important; border: none; color: #555; padding: 0; }
+        .tiny-btn button:hover { color: #fca311; }
+        
+        #MainMenu, footer, header, .stDeployButton {visibility: hidden;}
+        
+        div[data-testid="stSelectbox"] > div > div {
+            background-color: #1A1A1A !important;
+            color: white !important;
+            border: 1px solid #333 !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -264,35 +307,23 @@ elif st.session_state.app_stage == 'project_landing':
         projects = response.get("data", [])
         
         # 4. عرض المشاريع كـ بطاقات (Cards)
-        # 4. عرض المشاريع (تصميم جديد)
         if not projects:
             st.info("لا توجد مشاريع حتى الآن. ابدأي رحلتك الأولى! 👇")
         else:
-            # عرض كل مشروع
+            # عرض كل مشروع في صف
             for p in projects:
-                # الـ CSS الجديد سيحول هذا الكونتينر إلى زجاج
                 with st.container(border=True):
-                    c1, c2 = st.columns([0.85, 0.15])
+                    c1, c2 = st.columns([4, 1])
                     with c1:
-                        # العنوان بخط عريض
-                        st.markdown(f"### 📂 {p['name']}")
-                        # وصف وتاريخ بتنسيق HTML صغير وأنيق
-                        st.markdown(f"""
-                        <div style='display: flex; gap: 15px; margin-top: -10px;'>
-                            <span style='background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px; font-size: 0.8em; color: #ccc;'>
-                                🏗️ {p['project_type']}
-                            </span>
-                            <span style='background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px; font-size: 0.8em; color: #ccc;'>
-                                📅 {p['created_at'][:10]}
-                            </span>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    
+                        st.subheader(f"📂 {p['name']}")
+                        st.caption(f"Type: {p['project_type']} | Date: {p['created_at'][:10]}")
                     with c2:
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        if st.button("🚀", key=f"open_{p['id']}", help="فتح المشروع"):
-                            # 🟢 منطق الفتح (نفس القديم)
+                        # زر لفتح المشروع
+                        if st.button("فتح 🔓", key=f"open_{p['id']}", use_container_width=True):
+                            # 🟢 السطر السحري لتغيير الرابط في المتصفح
                             st.query_params["pid"] = p['id']
+                            
+                            # تحميل بيانات هذا المشروع في الجلسة
                             st.session_state.project_data = {
                                 "user_real_name": profile.get('user_real_name'),
                                 "user_nickname": profile.get('user_nickname'),
@@ -302,9 +333,12 @@ elif st.session_state.app_stage == 'project_landing':
                                 "site": p['site_context'],
                                 "requirements": p['requirements']
                             }
-                            with st.spinner("🚀 الانطلاق..."):
+                            
+                            # تحميل المحادثات السابقة
+                            with st.spinner("استرجاع ذكريات المشروع..."):
                                 history = db_handler.get_project_messages(p['id'])
                                 st.session_state.messages = history
+                                
                             st.session_state.app_stage = 'main_chat'
                             st.rerun()
 
@@ -371,36 +405,29 @@ elif st.session_state.app_stage == 'main_chat':
     st.markdown("""<style>section[data-testid="stSidebar"] { display: block !important; }</style>""", unsafe_allow_html=True)
 
     with st.sidebar:
-        st.markdown("## 🏛️ AylaArc")
-        st.caption("رفيقة الاستوديو المعماري")
+        st.title("🏛️ AylaArc")
+        st.caption("Architectural Studio Companion")
+        st.markdown("---")
+        
+        # اختيار المرحلة
+        selected_phase_key = st.selectbox("اختر مرحلة المشروع:", list(phases.keys()), index=0)
         
         st.markdown("---")
         
-        # 1. زر العودة (المفقود سابقاً)
-        # نستخدم أيقونة وتسمية واضحة
-        if st.button("🔙 العودة للأرشيف", use_container_width=True):
-            st.session_state.app_stage = 'project_landing'
+        # زر تنظيف المحادثة
+        if st.button("🧹 Clear Chat History", use_container_width=True):
+            if 'id' in st.session_state.project_data:
+                 # خيار إضافي: هل تريد حذفها من الداتا بيس أيضاً؟ هنا نحذفها من الشاشة فقط للسرعة
+                 pass
+            st.session_state.messages = []
             st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
-        
-        # 2. القوائم
-        selected_phase_key = st.selectbox("📌 مرحلة المشروع:", list(phases.keys()), index=0)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
 
-        # 3. زر "مشروع جديد" الفخم
-        # غيرنا النص والوجهة ليذهب لصفحة إنشاء المشروع
-        if st.button("✨ فتح مشروع جديد", key="gold_btn", use_container_width=True):
-            st.session_state.app_stage = 'project_form'
+        # زر تسجيل الخروج (جديد 🔴)
+        if st.button("🚪 تسجيل خروج (Logout)", type="primary", use_container_width=True):
+            st.session_state.clear() # مسح كل الذاكرة
             st.rerun()
-            
-        st.markdown("---")
-        # زر تسجيل الخروج (اختياري بالأسفل)
-        if st.button("🔒 تسجيل خروج", use_container_width=True):
-             st.session_state.user = None
-             st.session_state.app_stage = 'profile'
-             st.rerun()
 
     p_data = st.session_state.get('project_data', {})
     project_title = p_data.get('name', 'New Project')
@@ -420,9 +447,14 @@ elif st.session_state.app_stage == 'main_chat':
 
     for i, message in enumerate(st.session_state.messages):
         role = message["role"]
-        avatar = "👷‍♀️" if role == "user" else "🏛️"
+        
+        # 🎨 تحديث الأيقونات لتكون أكثر احترافية ونضوجاً
+        # 👩‍💻 = مهندسة تعمل على حاسوب (بدلاً من الخوذة)
+        # 👩‍💼 = مديرة/Senior Architect (بدلاً من المبنى)
+        avatar = "👷‍♀️" if role == "user" else "👩‍💼"
         
         if st.session_state.edit_index == i:
+            # ... (باقي كود التعديل كما هو) ...
             with st.container(border=True):
                 st.caption("✏️ تعديل الرسالة:")
                 new_text = st.text_area("نص الرسالة:", value=message["content"], key=f"edit_area_{i}")
@@ -509,7 +541,7 @@ elif st.session_state.app_stage == 'main_chat':
 
     if st.session_state.trigger_generation:
         last_msg = st.session_state.messages[-1]
-        with st.chat_message("assistant", avatar="🏛️"):
+        with st.chat_message("assistant", avatar="👩‍💼"):
             st.markdown('<div class="assistant-marker"></div>', unsafe_allow_html=True)
             ph = st.empty()
             full_res = ""
@@ -530,26 +562,20 @@ elif st.session_state.app_stage == 'main_chat':
                 except Exception as e:
                     st.error(f"Error: {e}")
         
-        # 👇 التعديل الهندسي: نتأكد أن الرد ليس فارغاً قبل الحفظ
+       # 👇 التعديل الهندسي: المعالجة النهائية والحفظ
         if full_res and full_res.strip():
+            # 1. إضافة الرد للذاكرة الحالية
             st.session_state.messages.append({"role": "assistant", "content": full_res})
             
+            # 2. الحفظ في الداتا بيس
             if 'id' in st.session_state.project_data:
                 current_pid = st.session_state.project_data['id']
                 db_handler.save_message(current_pid, "assistant", full_res)
-        else:
-            # إذا كان الرد فارغاً (بسبب خطأ ما)، لا نحفظ شيئاً وننبه المستخدم
-            st.warning("⚠️ لم يتم استلام رد من النموذج. حاول مرة أخرى.")
         
-        st.session_state.trigger_generation = False
-        st.rerun()
+        elif not full_res:
+            # تنبيه فقط إذا كان الرد فارغاً تماماً لسبب تقني
+            st.warning("⚠️ لم يتم استلام رد من النموذج.")
         
-        # حفظ رد الـ AI
-        st.session_state.messages.append({"role": "assistant", "content": full_res})
-        
-        if 'id' in st.session_state.project_data:
-            current_pid = st.session_state.project_data['id']
-            db_handler.save_message(current_pid, "assistant", full_res)
-        
+        # 3. إغلاق التريقر وإعادة التشغيل لتحديث الشات
         st.session_state.trigger_generation = False
         st.rerun()

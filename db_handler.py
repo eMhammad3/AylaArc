@@ -2,23 +2,15 @@ import os
 import uuid # نحتاجها لتسمية الملفات بأسماء فريدة
 from supabase import create_client, Client
 from dotenv import load_dotenv
-import streamlit as st 
 
 # تحميل المفاتيح
-def get_key(name):
-    try:
-        # حاول تجيب المفتاح من سيرفر ستريمليت
-        return st.secrets[name]
-    except:
-        # إذا انفجر (لأنك لوكال)، جيبه من ملف .env بصمت
-        return os.environ.get(name)
+load_dotenv()
 
-# الآن استخدم الدالة الامنة
-url = get_key("SUPABASE_URL")
-key = get_key("SUPABASE_KEY")
+url: str = os.environ.get("SUPABASE_URL")
+key: str = os.environ.get("SUPABASE_KEY")
 
 if not url or not key:
-    raise ValueError("⚠️ المفاتيح مفقودة! تأكد من ملف .env لوكال أو Secrets بالسيرفر")
+    raise ValueError("⚠️ Supabase credentials not found in .env")
 
 # إنشاء الاتصال (Singleton)
 supabase: Client = create_client(url, key)
