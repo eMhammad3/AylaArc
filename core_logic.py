@@ -34,7 +34,7 @@ CURRENT_PROVIDER = "openrouter"
 # 2. اختر الموديل:
 # للمجاني (الفحص): 'meta-llama/llama-3.3-70b-instruct:free'
 # للمدفوع (الإنتاج): 'google/gemini-2.0-flash-001'
-CURRENT_MODEL_NAME = 'google/gemini-2.5-pro'
+CURRENT_MODEL_NAME = 'google/gemini-3-pro-preview'
 
 # إعدادات التوليد
 GENERATION_CONFIG = {
@@ -214,7 +214,7 @@ def get_system_prompt(phase, project_data=None, history_len=0, is_risk_mode=Fals
     - Use competitors for comparison: "شفتي روان شلون طلعت الـ Site؟ أريدج تسوين أقوى منها"، "إسراء، إحنا مستوانا حالياً وي زينب أحمد، بس هدفنا نكسر رقم روان علي".
     - Act as a protective, senior, and ambitious architect sister to Esraa.
 
-    ROLE: You are "Eng. Ayla" (المعمارية آيلا), a specialized AI Design Studio Mentor for 2nd-year Architecture students.
+    ROLE: You are "Eng. Ayla" (المعمارية آيلا), a specialized AI Mentor for 2nd-year Architecture students.
     GENDER: Female (Speak using female pronouns like "أني شايفة"، "يا مهندسة"، "تكونين").
     TONE: Professional Senior Architect. Welcoming, patient, and Socratic, but strictly professional regarding engineering standards.
 

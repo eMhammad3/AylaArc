@@ -209,12 +209,14 @@ st.markdown("""
         }
 
         /* =========================================
-           5. الشات والرسائل
+           5. الشات والرسائل (تعديل: إخفاء بوكس الآيلا)
            ========================================= */
         div[data-testid="stChatMessage"] {
             background-color: transparent !important;
             border: none !important;
         }
+        
+        /* 1. رسالة الطالب (تبقى بستايل وصندوق) */
         div[data-testid="stChatMessage"]:has(.user-marker) {
             flex-direction: row-reverse !important;
         }
@@ -228,17 +230,21 @@ st.markdown("""
             text-align: right;
             direction: rtl;
         }
+
+        /* 2. رسالة آيلا (بدون صندوق - نص فقط) */
         div[data-testid="stChatMessage"]:has(.assistant-marker) div[data-testid="stChatMessageContent"] {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255,255,255,0.05);
-            color: #e0e0e0;
-            border-radius: 5px 20px 20px 20px !important;
-            padding: 15px !important;
+            background: transparent !important; /* خلفية شفافة */
+            border: none !important;            /* بدون حدود */
+            box-shadow: none !important;        /* بدون ظل */
+            color: #e0e0e0;                     /* لون النص */
+            padding: 15px 0px !important;       /* تقليل الحواف الجانبية */
             text-align: right;
             direction: rtl;
         }
+        
+        /* إخفاء الأيقونات الصغيرة إن أردت، أو ابقائها */
         .user-marker, .assistant-marker { display: none; }
-
+            
         /* =========================================
            6. تحسينات عامة
            ========================================= */
@@ -475,7 +481,7 @@ elif st.session_state.app_stage == 'main_chat':
 
     with st.sidebar:
         st.title("🏛️ AylaArc")
-        st.caption("Architectural Studio Companion")
+        st.caption("Your Architectural Companion Soulmate")
         
         # --- 1. زر الرجوع للقائمة الرئيسية ---
         if st.button("🔙 العودة للمشاريع", use_container_width=True):
