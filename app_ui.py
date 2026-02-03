@@ -75,39 +75,174 @@ phases = {
     "8️⃣ التحكيم والتسليم (Jury & Submission) 🚧": "8️⃣ Jury & Marketing (Locked)"
 }
 
-# 3. الستايل (CSS)
+# 3. الستايل (CSS) - النسخة الذهبية (Clean Cut) ✨
 st.markdown("""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;600&display=swap');
-        html, body, [class*="css"] { font-family: 'IBM Plex Sans Arabic', sans-serif; background-color: #0E0E0E; color: #E0E0E0; scroll-behavior: smooth; }
-        [data-testid="stAppViewContainer"] { direction: ltr !important; }
-        h1, h2, h3, h4, .stCaption, p, div, label, .stTextInput, .stTextArea { direction: rtl; text-align: right; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0E0E0E; }
-        ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
-        header { background-color: transparent !important; }
+        /* =========================================
+           1. الأساسيات والخطوط
+           ========================================= */
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;600;700&display=swap');
+
+        html, body, [class*="css"] {
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        [data-testid="stAppViewContainer"] {
+            background: radial-gradient(circle at 50% 10%, #1a1a2e 0%, #000000 100%);
+        }
+
+        h1, h2, h3, h4, .stCaption, p, div, label, .stTextInput, .stTextArea {
+            direction: rtl;
+            text-align: right;
+        }
+
+        /* =========================================
+           2. السهم الذكي (Smart Toggle)
+           ========================================= */
+        header[data-testid="stHeader"] {
+            background: transparent !important;
+            z-index: 1 !important;
+            height: 0px !important;
+        }
         [data-testid="stDecoration"] { display: none; }
-        [data-testid="stSidebarCollapsedControl"] { position: fixed !important; top: 20px !important; left: 20px !important; z-index: 1000005 !important; display: flex !important; align-items: center !important; justify-content: center !important; background-color: #1A1A1A !important; border: 2px solid #fca311 !important; border-radius: 8px !important; width: 45px !important; height: 45px !important; transition: all 0.3s ease; }
-        [data-testid="stSidebarCollapsedControl"] svg { width: 24px !important; height: 24px !important; color: #fca311 !important; fill: #fca311 !important; }
-        [data-testid="stSidebarCollapsedControl"]:hover { background-color: #fca311 !important; transform: scale(1.1); }
-        [data-testid="stSidebarCollapsedControl"]:hover svg { fill: #000000 !important; color: #000000 !important; }
-        [data-testid="stPopover"] { position: fixed !important; bottom: 20px !important; left: 10px !important; z-index: 1000003 !important; }
-        [data-testid="stPopover"] > button { background-color: #1A1A1A !important; border: 1px solid #333 !important; color: #fca311 !important; border-radius: 8px !important; width: 45px !important; height: 45px !important; }
-        [data-testid="stPopover"] > button:hover { border-color: #fca311 !important; color: #fff !important; }
-        div[data-testid="stChatMessage"] { display: flex !important; gap: 15px !important; background-color: transparent !important; border: none !important; }
-        div[data-testid="stChatMessage"]:has(.user-marker) { margin-right: auto !important; margin-left: 0 !important; flex-direction: row-reverse !important; background-color: #0056b3 !important; color: #E0E0E0 !important; border-radius: 12px !important; border-top-right-radius: 0 !important; padding: 12px 20px !important; width: fit-content !important; max-width: 80% !important; }
-        div[data-testid="stChatMessage"]:has(.user-marker) * { color: #E0E0E0 !important; }
-        .user-marker, .assistant-marker { display: none; }
-        #MainMenu, footer {visibility: hidden;}
-        [data-testid="stChatInput"] { background-color: transparent !important; }
-        [data-testid="stChatInput"] textarea { background-color: #1A1A1A !important; border: 1px solid #333 !important; color: white !important; }
-        div[data-testid="stSelectbox"] > div > div { background-color: #1A1A1A !important; color: white !important; border: 1px solid #333 !important; }
-        .tiny-btn button { background: transparent !important; border: none; color: #555; padding: 0; }
-        .tiny-btn button:hover { color: #fca311; }
+
+        /* الزر عندما تكون القائمة مغلقة */
+        [data-testid="stSidebarCollapsedControl"] {
+            display: block !important;
+            color: #fca311 !important;
+            background-color: rgba(26, 26, 26, 0.9) !important;
+            border: 1px solid #fca311 !important;
+            border-radius: 8px !important;
+            top: 20px !important;
+            left: 20px !important;
+            z-index: 1000002 !important;
+            transition: all 0.3s ease;
+        }
+        [data-testid="stSidebarCollapsedControl"]:hover {
+            transform: scale(1.1);
+            background-color: #fca311 !important;
+            color: black !important;
+        }
+
+        /* الزر عندما تكون القائمة مفتوحة */
+        section[data-testid="stSidebar"] [data-testid="stSidebarCollapsedControl"] {
+            position: absolute !important;
+            left: auto !important;
+            right: 10px !important;
+            top: 10px !important;
+            background-color: transparent !important;
+            border: none !important;
+            color: #666 !important;
+        }
+        section[data-testid="stSidebar"] [data-testid="stSidebarCollapsedControl"]:hover {
+            color: #fca311 !important;
+            background-color: transparent !important;
+            transform: scale(1.1);
+        }
+
+        /* =========================================
+           3. القائمة الجانبية (The Clean Logic) 🧠🩸
+           ========================================= */
         
-        /* كلاسات جديدة للأقفال */
-        .locked-blur { filter: blur(4px); opacity: 0.5; pointer-events: none; }
-        .lock-overlay { text-align: center; padding: 50px; background: #1A1A1A; border: 2px dashed #444; border-radius: 15px; margin-top: 20px; }
+        /* 1. الإطار الخارجي (الأب): يعمل فقط كـ "مقص" */
+        section[data-testid="stSidebar"] {
+            background-color: transparent !important; /* لا لون */
+            border: none !important; /* لا حدود */
+            box-shadow: none !important; /* لا ظل */
+            overflow: hidden !important; /* قص أي شيء يخرج عنه */
+        }
+
+        /* 2. المحتوى الداخلي (الابن): هو من يحمل اللون والحدود */
+        section[data-testid="stSidebar"] > div {
+            background-color: #0c0c0c !important;
+            border-right: 1px solid #222 !important; /* الحد هنا */
+            box-shadow: 5px 0 20px rgba(0,0,0,0.7); /* الظل هنا */
+            padding-top: 40px !important;
+            height: 100vh !important; /* ارتفاع كامل */
+            width: 100% !important;
+        }
+
+        /* منع النصوص من التكسر */
+        section[data-testid="stSidebar"] * {
+            white-space: nowrap !important;
+        }
+
+        /* =========================================
+           4. كاردات المشاريع
+           ========================================= */
+        div[data-testid="stVerticalBlock"] > div[style*="border"] {
+            background: rgba(255, 255, 255, 0.04) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+        div[data-testid="stVerticalBlock"] > div[style*="border"]:hover {
+            border-color: #fca311 !important;
+            transform: translateY(-2px);
+        }
+
+        /* =========================================
+           5. الشات والرسائل
+           ========================================= */
+        div[data-testid="stChatMessage"] {
+            background-color: transparent !important;
+            border: none !important;
+        }
+        div[data-testid="stChatMessage"]:has(.user-marker) {
+            flex-direction: row-reverse !important;
+        }
+        div[data-testid="stChatMessage"]:has(.user-marker) div[data-testid="stChatMessageContent"] {
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            border-radius: 20px 5px 20px 20px !important;
+            padding: 15px !important;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-align: right;
+            direction: rtl;
+        }
+        div[data-testid="stChatMessage"]:has(.assistant-marker) div[data-testid="stChatMessageContent"] {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255,255,255,0.05);
+            color: #e0e0e0;
+            border-radius: 5px 20px 20px 20px !important;
+            padding: 15px !important;
+            text-align: right;
+            direction: rtl;
+        }
+        .user-marker, .assistant-marker { display: none; }
+
+        /* =========================================
+           6. تحسينات عامة
+           ========================================= */
+        .stTextInput input, .stTextArea textarea {
+            background-color: #0a0a0a !important;
+            border: 1px solid #333 !important;
+            color: white !important;
+            border-radius: 8px !important;
+            direction: rtl;
+        }
+        .stTextInput input:focus, .stTextArea textarea:focus {
+            border-color: #fca311 !important;
+        }
+        .stButton button {
+            border-radius: 8px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        .stButton button:hover {
+            border-color: #fca311;
+            color: #fca311;
+        }
+        .lock-overlay {
+            background: rgba(0,0,0,0.5);
+            border: 1px dashed #555;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+        }
     </style>
 """, unsafe_allow_html=True)
 
