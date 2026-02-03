@@ -62,6 +62,7 @@ if 'edit_index' not in st.session_state:
 
 # تعريف المراحل
 phases = {
+    "0️⃣ محادثة عامة (General Chat)": "0️⃣ General Chat & Setup",
     "1️⃣ تحليل الموقع (Site Analysis)": "1️⃣ Site & Research (Active)",
     "2️⃣ الفكرة والتوزيع (Concept & Zoning)": "2️⃣ Concept & Zoning (Soon)",
     "3️⃣ السكيتشات (Sketches)": "3️⃣ Sketches & Freehand (Locked)",
@@ -75,77 +76,148 @@ phases = {
 # 3. الستايل (CSS) - النسخة "الهندسية" (Industrial & Professional Look)
 st.markdown("""
     <style>
-        /* استيراد خط IBM Plex Sans Arabic */
+        /* ============================================================
+           1. التأسيس (Fonts & Basics)
+           ============================================================ */
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;600&display=swap');
         
-        /* 1. أساسيات الصفحة */
         html, body, [class*="css"] {
             font-family: 'IBM Plex Sans Arabic', sans-serif;
             background-color: #0E0E0E;
             color: #E0E0E0;
-        }
-        
-        /* ⚠️⚠️⚠️ الحل الجذري للقائمة الجانبية ⚠️⚠️⚠️ */
-        
-        /* أ) تنسيق الزر عندما تكون القائمة مغلقة (السهم الذي يظهر لإعادتها) */
-        [data-testid="stSidebarCollapsedControl"] {
-            display: block !important;
-            z-index: 1000002 !important; /* رقم خيالي لضمان بقائه فوق كل شيء */
-            background-color: #1A1A1A !important;
-            border: 2px solid #fca311 !important; /* إطار برتقالي واضح */
-            border-radius: 8px !important;
-            left: 1rem !important; /* تثبيت مكانه يسار الشاشة */
-            top: 4rem !important; /* تثبيت مكانه من الأعلى */
-            width: 45px !important;
-            height: 45px !important;
-            transition: all 0.3s ease;
-            opacity: 1 !important; /* إجبار الظهور */
+            scroll-behavior: smooth;
         }
 
-        /* ب) تلوين السهم الداخلي (SVG) - هذا ما كان ينقص الحلول السابقة */
-        [data-testid="stSidebarCollapsedControl"] svg, 
-        [data-testid="stSidebarCollapsedControl"] i {
-            color: #fca311 !important;
-            fill: #fca311 !important;
-            stroke: #fca311 !important;
-            width: 25px !important;
-            height: 25px !important;
-        }
-        
-        /* تأثير عند مرور الماوس */
-        [data-testid="stSidebarCollapsedControl"]:hover {
-            transform: scale(1.1);
-            background-color: #fca311 !important;
-            box-shadow: 0 0 15px rgba(252, 163, 17, 0.6); /* توهج */
-        }
-        
-        /* ج) عكس اللون عند الماوس (يصبح السهم أسود والخلفية برتقالي) */
-        [data-testid="stSidebarCollapsedControl"]:hover svg {
-            fill: #000000 !important;
-            color: #000000 !important;
-        }
-
-        /* د) تنسيق الزر عندما تكون القائمة مفتوحة (زر الإغلاق X) */
-        [data-testid="stSidebarUserContent"] button[kind="header"] {
-             color: #fca311 !important;
-        }
-        
-        /* 2. باقي التنسيقات (Scrollbar, Chat, etc.) كما هي... */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0E0E0E; }
-        ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
-
-        /* ... (بقيت التنسيقات القديمة للشات والأنيميشن) ... */
-        div[data-testid="stChatMessage"] {
-            background-color: transparent !important;
-        }
-        
         /* تصحيح الاتجاهات */
         [data-testid="stAppViewContainer"] { direction: ltr !important; }
         h1, h2, h3, h4, .stCaption, p, div, label, .stTextInput, .stTextArea {
             direction: rtl;
             text-align: right;
         }
+
+        /* سكرول بار رفيع */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0E0E0E; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+        /* ============================================================
+           2. إصلاح القائمة الجانبية (The Logical Fix) 🧠
+           ============================================================ */
+        
+        /* أولاً: لا نخفي الهيدر بالكامل، بل نجعله شفافاً لكي يبقى السهم حياً */
+        header {
+            background-color: transparent !important;
+        }
+        
+        /* نخفي فقط الخط الملون المزعج في أعلى الصفحة */
+        [data-testid="stDecoration"] {
+            display: none;
+        }
+
+        /* ثانياً: تنسيق زر القائمة (السهم) */
+        [data-testid="stSidebarCollapsedControl"] {
+            /* نستخدم Fixed لتحريره من قيود الهيدر */
+            position: fixed !important;
+            top: 20px !important;    /* مسافة من الأعلى */
+            left: 20px !important;   /* مسافة من اليسار */
+            z-index: 1000005 !important;
+            
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            
+            background-color: #1A1A1A !important;
+            border: 2px solid #fca311 !important;
+            border-radius: 8px !important;
+            width: 45px !important;
+            height: 45px !important;
+            transition: all 0.3s ease;
+        }
+
+        /* تلوين الأيقونة */
+        [data-testid="stSidebarCollapsedControl"] svg {
+            width: 24px !important;
+            height: 24px !important;
+            color: #fca311 !important;
+            fill: #fca311 !important;
+        }
+        
+        /* حركة الماوس */
+        [data-testid="stSidebarCollapsedControl"]:hover {
+            background-color: #fca311 !important;
+            transform: scale(1.1);
+        }
+        [data-testid="stSidebarCollapsedControl"]:hover svg {
+            fill: #000000 !important;
+            color: #000000 !important;
+        }
+
+        /* ============================================================
+           3. باقي التنسيقات (فقاعات الشات وزر الرفع)
+           ============================================================ */
+        
+        /* زر الرفع (الدبوس) */
+        [data-testid="stPopover"] {
+            position: fixed !important;
+            bottom: 20px !important;
+            left: 10px !important;   
+            z-index: 1000003 !important;
+        }
+        [data-testid="stPopover"] > button {
+            background-color: #1A1A1A !important;
+            border: 1px solid #333 !important;
+            color: #fca311 !important;
+            border-radius: 8px !important;
+            width: 45px !important;
+            height: 45px !important;
+        }
+        [data-testid="stPopover"] > button:hover {
+            border-color: #fca311 !important;
+            color: #fff !important;
+        }
+
+        /* فقاعات الشات */
+        div[data-testid="stChatMessage"] {
+            display: flex !important;
+            gap: 15px !important;
+            background-color: transparent !important;
+            border: none !important;
+        }
+        div[data-testid="stChatMessage"]:has(.user-marker) {
+            margin-right: auto !important; margin-left: 0 !important;
+            flex-direction: row-reverse !important;
+            background-color: #0056b3 !important; 
+            color: #E0E0E0 !important;
+            border-radius: 12px !important; 
+            border-top-right-radius: 0 !important;
+            padding: 12px 20px !important;
+            width: fit-content !important;
+            max-width: 80% !important;
+        }
+        div[data-testid="stChatMessage"]:has(.user-marker) * { color: #E0E0E0 !important; }
+        
+        .user-marker, .assistant-marker { display: none; }
+
+        /* إخفاء القوائم الجانبية الافتراضية */
+        #MainMenu, footer {visibility: hidden;}
+        
+        /* ⚠️⚠️ ملاحظة هامة: حذفنا "header" من قائمة الإخفاء أعلاه ⚠️⚠️ */
+
+        /* تحسينات عامة */
+        [data-testid="stChatInput"] { background-color: transparent !important; }
+        [data-testid="stChatInput"] textarea {
+            background-color: #1A1A1A !important;
+            border: 1px solid #333 !important;
+            color: white !important;
+        }
+        div[data-testid="stSelectbox"] > div > div {
+            background-color: #1A1A1A !important;
+            color: white !important;
+            border: 1px solid #333 !important;
+        }
+        .tiny-btn button { background: transparent !important; border: none; color: #555; padding: 0; }
+        .tiny-btn button:hover { color: #fca311; }
+
     </style>
 """, unsafe_allow_html=True)
 

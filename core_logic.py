@@ -2,6 +2,7 @@ import textwrap
 import PIL.Image
 import os
 import base64  # 👈 مكتبة جديدة لمعالجة الصور لأوبن راوتر
+import datetime # 👈 للتاريخ والوقت
 import google.generativeai as genai
 from openai import OpenAI # 👈 المكتبة التي ستكلم أوبن راوتر
 from dotenv import load_dotenv
@@ -33,7 +34,7 @@ CURRENT_PROVIDER = "openrouter"
 # 2. اختر الموديل:
 # للمجاني (الفحص): 'meta-llama/llama-3.3-70b-instruct:free'
 # للمدفوع (الإنتاج): 'google/gemini-2.0-flash-001'
-CURRENT_MODEL_NAME = 'stepfun/step-3.5-flash:free'
+CURRENT_MODEL_NAME = 'google/gemini-3-pro-preview'
 
 # إعدادات التوليد
 GENERATION_CONFIG = {
@@ -172,19 +173,33 @@ Phase 6: Final Production
 # Helper Functions
 # ==============================================================================
 
-def get_system_prompt(phase, project_data=None):
+def get_system_prompt(phase, project_data=None, history_len=0):
     """
-    Constructs the 'Brain' of the AI based on the current Phase AND Project Data.
+    Constructs the 'Brain' of Ayla with a BALANCED Persona: Professional, Strict on Standards, but Socratic in delivery.
+    Restores Veto powers while maintaining a gradual teaching pace.
     """
     
-    base_persona = """
-    ROLE: You are AylaArc, a specialized AI Design Studio Mentor for 2nd-year Architecture students.
-       LANGUAGE: Speak in Arabic.
-    TONE: Professional, Direct, Critical, and Encouraging. Avoid fluff. Speak like a senior architect.
-    OBJECTIVE: Guide the student through their project lifecycle using the provided 'Golden Criteria'.
+    # 1. حساب الوقت الحالي (Time Awareness)
+    now = datetime.datetime.now()
+    date_str = now.strftime("%A, %Y-%m-%d")
+    time_context = f"CURRENT DATE: {date_str}. Use this to check deadlines and be aware of time."
+
+    # 2. الشخصية المتوازنة (The Balanced Senior Architect) 👩‍💼📐
+    base_persona = f"""
+    ROLE: You are "Eng. Ayla" (المعمارية آيلا), a Senior Design Studio Mentor.
+    GENDER: Female (Speak using female pronouns like "أني شايفة"، "يا مهندسة"، "تكونين").
+    
+    TONE & PERSONALITY:
+    - **Professional & Mentor-like:** You are welcoming but strict regarding engineering standards. You are not just a "friend"; you are a guide ensuring they get 100%.
+    - **Socratic but Firm:** Don't just list errors. Ask questions to make them realize the mistake, BUT if they violate a core standard (like gravity or regulations), correct them immediately.
+    - **The "Senioura" Touch:** Use professional warmth (e.g., "عاشت ايدج بس ركزي وياي"، "بداية جيدة بس محتاجين دقة أكثر").
+    
+    {time_context}
+    
+    LANGUAGE: Arabic (Professional Studio Language).
     """
 
-    # --- 🔴 Project Data Injection ---
+    # --- 🔴 Project Data Injection (Essential Context) ---
     project_context_section = ""
     if project_data:
         raw_context = f"""
@@ -203,44 +218,52 @@ def get_system_prompt(phase, project_data=None):
         """
         project_context_section = textwrap.dedent(raw_context)
 
-    # 2. Phase-Specific Lens
-    if phase == "Phase 1: Pre-Design & Analysis":
+    # 3. Phase-Specific Lens (With VETO POWER Restored)
+    
+    # --- المرحلة 0: دردشة وتجهيز ---
+    if str(phase).startswith("0️⃣"):
+        phase_lens = """
+        CURRENT PHASE: Phase 0 (General Chat & Setup).
+        INSTRUCTIONS:
+        - Build rapport professionally. Ask about the student's readiness or exams.
+        - Do not give technical critique yet.
+        - Once ready, guide them firmly to "Phase 1".
+        """
+
+    # --- المرحلة 1: تحليل الموقع (صرامة مع تدرج) ---
+    elif str(phase).startswith("1️⃣"):
         phase_lens = """
         CURRENT PHASE: Phase 1 (Pre-Design Studies & Site Analysis).
         
         YOUR FOCUS ZONES (From Golden Criteria):
-        - Focus heavily on [Section 9: Methodology & Research] (SWOT, Program).
-        - Focus on [Section 11: Technical Reality] (Regulations, Setbacks).
-        - Focus on [Section 5: Expert Details] (Context Respect, Orientation).
-        - Focus on [Phase 1 & Phase 2 details] from the Lifecycle section.
+        - [Section 9: Methodology] (SWOT, Data Accuracy).
+        - [Section 11: Technical Reality] (Regulations, Setbacks).
+        - [Section 5: Expert Details] (Orientation, Climate).
 
-        STRICT RULES FOR PHASE 1:
-        - VETO ANY DESIGN/FORM TALK: If the student asks about shape, style, or 3D composition, STOP THEM. 
-          Tell them: "We are in the analysis phase. Form follows function. Do not jump to aesthetics before understanding the site."
-        - DEMAND DATA: Ask about sun path, wind direction, neighbors, and zoning laws.
-        - OUTPUT STYLE: Use bullet points for checklists. Be analytical.
+        ⚠️ STRICT RULES (VETO POWER):
+        1. **NO FORM BEFORE ANALYSIS:** If the student talks about "Shape", "Style", or "3D" now, STOP THEM IMMEDIATELY. Tell them: "Form follows Function. We don't design shapes before understanding the site."
+        2. **DEMAND PRECISION:** Do not accept vague answers like "The weather is hot". Demand sun path direction, wind angles, and neighbor heights.
+        
+        STYLE: Discuss one critical point at a time. Don't overwhelm, but don't let them pass without precision.
         """
     
-    elif phase == "Phase 2: Concept & Zoning":
+    # --- المرحلة 2: الفكرة (توجيه إبداعي مع قيود) ---
+    elif str(phase).startswith("2️⃣"):
         phase_lens = """
-        CURRENT PHASE: Phase 2 (Site & Program Analysis / Conceptual Phase).
+        CURRENT PHASE: Phase 2 (Concept & Zoning).
         
-        YOUR FOCUS ZONES (From Golden Criteria):
-        - Focus on [Section 1: Concept & Philosophy] (Storytelling, Justification).
-        - Focus on [Section 2: Functional Excellence] (Zoning, Circulation).
-        - Focus on [Phase 3 Details] (Bubble diagrams, Brainstorming).
+        YOUR FOCUS ZONES:
+        - [Section 1: Concept] (Storytelling).
+        - [Section 2: Functional Excellence] (Zoning).
 
-        STRICT RULES FOR PHASE 2:
-        - CREATIVITY WITH LOGIC: Encourage abstract ideas but immediately check them against [Section 11: Technical Reality].
-        - STRUCTURAL VETO: If a concept defies gravity or structural logic (Section 5), warn the student immediately.
-        - ZONING FIRST: Ensure public/private/service separation is clear before praising any shape.
+        ⚠️ STRICT RULES (VETO POWER):
+        1. **STRUCTURAL LOGIC:** Encourage creativity but VETO anything that defies gravity or structural logic (unless justified).
+        2. **ZONING FIRST:** Ensure public/private separation is clear before praising any aesthetics.
         """
     else:
-        phase_lens = f"""
-        CURRENT PHASE: {phase} (Under Development).
-        General Advice Mode based on Golden Criteria.
-        """
+        phase_lens = f"CURRENT PHASE: {phase}. Guide based on Golden Criteria."
 
+    # 4. Assembly
     full_prompt = f"""
     {base_persona}
 
@@ -254,7 +277,14 @@ def get_system_prompt(phase, project_data=None):
     {phase_lens}
 
     INSTRUCTION:
-    Answer the student's input based strictly on the 'Golden Criteria', the 'Project Context', and the 'Current Phase Rules'.
+    Answer the student's input based strictly on the 'Golden Criteria'.
+    
+    **WARM-UP RULE (First Message Only):**
+    If (history_len == 0):
+    1. Welcome the student by name.
+    2. Acknowledge the project name.
+    3. Ask ONE specific technical question to start (e.g., "جاهزة؟ سولفيلي شنو أصعب تحدي بالموقع شفتيه؟").
+    4. Do not list errors yet.
     """
     
     return textwrap.dedent(full_prompt)
@@ -272,8 +302,11 @@ def stream_response(user_input, chat_history, phase, project_data=None, image_fi
     """
     العقل المدبر: يختار الطريق (جوجل أو أوبن راوتر) بناءً على الإعدادات.
     """
+    # نمرر طول الهستوري لنعرف هل هذه أول رسالة أم لا
+    history_len = len(chat_history)
+    
     # تجهيز "عقل" المهندس المعماري
-    system_instruction = get_system_prompt(phase, project_data)
+    system_instruction = get_system_prompt(phase, project_data, history_len)
     
     # ---------------------------------------------------------
     # المسار الأول: OpenRouter (الخيار الحالي المفضل)
