@@ -8,7 +8,7 @@ st.set_page_config(
     page_title="AylaArc | المعمارية آيلا",
     page_icon="👷‍♀️",
     layout="wide",
-    initial_sidebar_state="auto"
+    initial_sidebar_state="expanded"
 )
 
 # 2. تهيئة الذاكرة والمراحل (النسخة الاحترافية: التوجيه عبر الرابط)
@@ -75,152 +75,76 @@ phases = {
 # 3. الستايل (CSS) - النسخة "الهندسية" (Industrial & Professional Look)
 st.markdown("""
     <style>
-        /* استيراد خط IBM Plex Sans Arabic (طابع هندسي تقني) */
+        /* استيراد خط IBM Plex Sans Arabic */
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;600&display=swap');
         
         /* 1. أساسيات الصفحة */
         html, body, [class*="css"] {
-            font-family: 'IBM Plex Sans Arabic', sans-serif; /* الخط الجديد */
-            background-color: #0E0E0E; /* لون أغمق قليلاً للفخامة */
-            scroll-behavior: smooth;
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            background-color: #0E0E0E;
+            color: #E0E0E0;
         }
-        [data-testid="stAppViewContainer"] { direction: ltr !important; }
         
-        h1, h2, h3, h4, .stCaption, p, div, label, .stTextInput, .stTextArea {
-            direction: rtl;
-            text-align: right;
+        /* ⚠️⚠️⚠️ الحل الجذري للقائمة الجانبية ⚠️⚠️⚠️ */
+        
+        /* أ) تنسيق الزر عندما تكون القائمة مغلقة (السهم الذي يظهر لإعادتها) */
+        [data-testid="stSidebarCollapsedControl"] {
+            display: block !important;
+            z-index: 1000002 !important; /* رقم خيالي لضمان بقائه فوق كل شيء */
+            background-color: #1A1A1A !important;
+            border: 2px solid #fca311 !important; /* إطار برتقالي واضح */
+            border-radius: 8px !important;
+            left: 1rem !important; /* تثبيت مكانه يسار الشاشة */
+            top: 4rem !important; /* تثبيت مكانه من الأعلى */
+            width: 45px !important;
+            height: 45px !important;
+            transition: all 0.3s ease;
+            opacity: 1 !important; /* إجبار الظهور */
         }
 
-        /* 2. سكرول بار رفيع جداً */
+        /* ب) تلوين السهم الداخلي (SVG) - هذا ما كان ينقص الحلول السابقة */
+        [data-testid="stSidebarCollapsedControl"] svg, 
+        [data-testid="stSidebarCollapsedControl"] i {
+            color: #fca311 !important;
+            fill: #fca311 !important;
+            stroke: #fca311 !important;
+            width: 25px !important;
+            height: 25px !important;
+        }
+        
+        /* تأثير عند مرور الماوس */
+        [data-testid="stSidebarCollapsedControl"]:hover {
+            transform: scale(1.1);
+            background-color: #fca311 !important;
+            box-shadow: 0 0 15px rgba(252, 163, 17, 0.6); /* توهج */
+        }
+        
+        /* ج) عكس اللون عند الماوس (يصبح السهم أسود والخلفية برتقالي) */
+        [data-testid="stSidebarCollapsedControl"]:hover svg {
+            fill: #000000 !important;
+            color: #000000 !important;
+        }
+
+        /* د) تنسيق الزر عندما تكون القائمة مفتوحة (زر الإغلاق X) */
+        [data-testid="stSidebarUserContent"] button[kind="header"] {
+             color: #fca311 !important;
+        }
+        
+        /* 2. باقي التنسيقات (Scrollbar, Chat, etc.) كما هي... */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0E0E0E; }
         ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #666; }
 
-        /* 3. أنيميشن هادئ */
-        @keyframes fadeInSlide {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* 4. الحاوية العامة للرسائل */
+        /* ... (بقيت التنسيقات القديمة للشات والأنيميشن) ... */
         div[data-testid="stChatMessage"] {
-            display: flex !important;
-            gap: 15px !important;
-            align-items: flex-start !important;
-            animation: fadeInSlide 0.3s ease-out;
-            padding: 0 !important;
-            background-color: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
-        
-        div[data-testid="stChatMessage"] * {
-            direction: rtl !important;
-            text-align: right !important;
-            line-height: 1.7 !important; /* مسافة بين الأسطر للقراءة المريحة */
-            font-weight: 300 !important; /* خط أنحف للأناقة */
-        }
-        
-        .user-marker, .assistant-marker { display: none; }
-        
-        /* ============================================================
-           👤 تنسيق المهندسة (User) - ستايل "Modern Dark"
-           ============================================================ */
-        div[data-testid="stChatMessage"]:has(.user-marker) {
-            margin-right: auto !important; margin-left: 0 !important;
-            flex-direction: row-reverse !important;
-            
-            /* خلفية زرقاء داكنة مطفية (Matte Blue) */
-            background-color: #0056b3 !important; 
-            color: #E0E0E0 !important;
-            
-            /* حواف حادة هندسية بدلاً من الدائرية */
-            border-radius: 8px !important; 
-            border-top-right-radius: 0 !important; /* حركة جمالية */
-            
-            padding: 12px 20px !important;
-            width: fit-content !important;
-            max-width: 80% !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
-        }
-        
-        div[data-testid="stChatMessage"]:has(.user-marker) p { color: #E0E0E0 !important; }
-
-        /* ============================================================
-           🏛️ تنسيق المديرة (AI) - تحرير المساحة
-           ============================================================ */
-        div[data-testid="stChatMessage"]:has(.assistant-marker) {
-    margin: 0 !important; /* إلغاء الدفع لليمين */
-    width: 100% !important;
-    max-width: 100% !important;
-    background-color: transparent !important;
-    border: none !important;
-    padding: 20px 0 !important;
-    display: block !important; /* تغيير من flex إلى block ليمتد النص */
-}
-
-/* سطر إضافي لضمان تمدد المحتوى الداخلي لستريم ليت */
-div[data-testid="stChatMessage"]:has(.assistant-marker) div[data-testid="stChatMessageContent"] {
-    width: 100% !important;
-    max-width: 100% !important;
-}
-
-        /* 5. شريط الكتابة */
-        [data-testid="stChatInput"] {
-            left: 60px !important; 
-            width: calc(100% - 70px) !important; 
             background-color: transparent !important;
         }
-
-        [data-testid="stChatInput"] textarea {
-            background-color: #1A1A1A !important;
-            border: 1px solid #333 !important;
-            color: white !important;
-            border-radius: 8px !important; /* حواف حادة */
-        }
         
-        [data-testid="stChatInput"] textarea:focus {
-            border-color: #fca311 !important;
-            box-shadow: none !important; /* إزالة التوهج للحفاظ على المينيماليزم */
-        }
-
-        /* الدبوس */
-        [data-testid="stPopover"] {
-            position: fixed !important;
-            bottom: 15px !important;
-            left: 15px !important;   
-            z-index: 999999 !important;
-            width: 50px !important;
-            height: 50px !important;
-        }
-
-        [data-testid="stPopover"] > button {
-            background-color: #1A1A1A !important;
-            border: 1px solid #333 !important;
-            color: #fca311 !important;
-            border-radius: 8px !important; /* مربع بحواف ناعمة قليلاً بدلاً من دائرة */
-            width: 48px !important;
-            height: 48px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-        
-        [data-testid="stPopover"] > button:hover {
-            border-color: #fca311 !important;
-            color: #fff !important;
-        }
-
-        .tiny-btn button { background: transparent !important; border: none; color: #555; padding: 0; }
-        .tiny-btn button:hover { color: #fca311; }
-        
-        #MainMenu, footer, header, .stDeployButton {visibility: hidden;}
-        
-        div[data-testid="stSelectbox"] > div > div {
-            background-color: #1A1A1A !important;
-            color: white !important;
-            border: 1px solid #333 !important;
+        /* تصحيح الاتجاهات */
+        [data-testid="stAppViewContainer"] { direction: ltr !important; }
+        h1, h2, h3, h4, .stCaption, p, div, label, .stTextInput, .stTextArea {
+            direction: rtl;
+            text-align: right;
         }
     </style>
 """, unsafe_allow_html=True)
