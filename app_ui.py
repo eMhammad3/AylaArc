@@ -541,14 +541,10 @@ elif st.session_state.app_stage == 'main_chat':
 
     if st.session_state.trigger_generation:
         last_msg = st.session_state.messages[-1]
-        
-        # 🟢 1. تعريف المتغير في الخارج لضمان وجوده دائماً
-        full_res = "" 
-        
         with st.chat_message("assistant", avatar="👩‍💼"):
             st.markdown('<div class="assistant-marker"></div>', unsafe_allow_html=True)
             ph = st.empty()
-            
+            full_res = ""
             with st.status("Analyzing...", expanded=False) as status:
                 try:
                     res_stream = core_logic.stream_response(
@@ -566,17 +562,18 @@ elif st.session_state.app_stage == 'main_chat':
                 except Exception as e:
                     st.error(f"Error: {e}")
         
-        # 🟢 2. الآن يمكننا فحص المتغير بأمان لأنه معرف بالخارج
+       # 👇 التعديل الهندسي: المعالجة النهائية والحفظ
         if full_res and full_res.strip():
-            # إضافة الرد للذاكرة
+            # 1. إضافة الرد للذاكرة الحالية
             st.session_state.messages.append({"role": "assistant", "content": full_res})
             
-            # الحفظ في الداتا بيس
+            # 2. الحفظ في الداتا بيس
             if 'id' in st.session_state.project_data:
                 current_pid = st.session_state.project_data['id']
                 db_handler.save_message(current_pid, "assistant", full_res)
         
         elif not full_res:
+            # تنبيه فقط إذا كان الرد فارغاً تماماً لسبب تقني
             st.warning("⚠️ لم يتم استلام رد من النموذج.")
         
         # 3. إغلاق التريقر وإعادة التشغيل لتحديث الشات
