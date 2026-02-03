@@ -62,26 +62,27 @@ if 'edit_index' not in st.session_state:
 
 # تعريف المراحل
 phases = {
-    "Phase 1": "1️⃣ Site & Research (Active)",
-    "Phase 2": "2️⃣ Concept & Zoning (Soon)",
-    "Phase 3": "3️⃣ Sketches & Freehand (Locked)",
-    "Phase 4": "4️⃣ 2D Drafting / Plans (Locked)",
-    "Phase 5": "5️⃣ 3D Modeling (Locked)",
-    "Phase 6": "6️⃣ Visualization (Locked)",
-    "Phase 7": "7️⃣ Physical Model (Locked)",
-    "Phase 8": "8️⃣ Jury & Marketing (Locked)"
+    "1️⃣ تحليل الموقع (Site Analysis)": "1️⃣ Site & Research (Active)",
+    "2️⃣ الفكرة والتوزيع (Concept & Zoning)": "2️⃣ Concept & Zoning (Soon)",
+    "3️⃣ السكيتشات (Sketches)": "3️⃣ Sketches & Freehand (Locked)",
+    "4️⃣ المخططات (2D Plans)": "4️⃣ 2D Drafting / Plans (Locked)",
+    "5️⃣ المودل (3D Modeling)": "5️⃣ 3D Modeling (Locked)",
+    "6️⃣ الإظهار المعماري (Visualization)": "6️⃣ Visualization (Locked)",
+    "7️⃣ الماكيت (Physical Model)": "7️⃣ Physical Model (Locked)",
+    "8️⃣ التحكيم والتسليم (Jury & Submission)": "8️⃣ Jury & Marketing (Locked)"
 }
 
-# 3. الستايل (CSS)
-# ... (بداية الملف كما هي) ...
-
-# 3. الستايل (CSS) - النسخة "المقصوصة" (Cut & Place)
+# 3. الستايل (CSS) - النسخة "الهندسية" (Industrial & Professional Look)
 st.markdown("""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+        /* استيراد خط IBM Plex Sans Arabic (طابع هندسي تقني) */
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;600&display=swap');
+        
+        /* 1. أساسيات الصفحة */
         html, body, [class*="css"] {
-            font-family: 'Tajawal', sans-serif;
-            background-color: #121212;
+            font-family: 'IBM Plex Sans Arabic', sans-serif; /* الخط الجديد */
+            background-color: #0E0E0E; /* لون أغمق قليلاً للفخامة */
+            scroll-behavior: smooth;
         }
         [data-testid="stAppViewContainer"] { direction: ltr !important; }
         
@@ -89,97 +90,133 @@ st.markdown("""
             direction: rtl;
             text-align: right;
         }
-        
-        /* تنسيق الفقاعات (ثابت ما تغير) */
-        div[data-testid="stChatMessage"] {
-            width: fit-content !important;
-            max-width: 80% !important;
-            padding: 10px 15px !important;
-            border-radius: 15px !important;
-            display: flex !important;
-            gap: 12px !important;
-            align-items: flex-start !important;
+
+        /* 2. سكرول بار رفيع جداً */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0E0E0E; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #666; }
+
+        /* 3. أنيميشن هادئ */
+        @keyframes fadeInSlide {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
+
+        /* 4. الحاوية العامة للرسائل */
+        div[data-testid="stChatMessage"] {
+            display: flex !important;
+            gap: 15px !important;
+            align-items: flex-start !important;
+            animation: fadeInSlide 0.3s ease-out;
+            padding: 0 !important;
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        
         div[data-testid="stChatMessage"] * {
             direction: rtl !important;
             text-align: right !important;
-            margin-top: 2px !important;
-            margin-bottom: 0 !important;
-            line-height: 1.5 !important;
+            line-height: 1.7 !important; /* مسافة بين الأسطر للقراءة المريحة */
+            font-weight: 300 !important; /* خط أنحف للأناقة */
         }
+        
         .user-marker, .assistant-marker { display: none; }
         
+        /* ============================================================
+           👤 تنسيق المهندسة (User) - ستايل "Modern Dark"
+           ============================================================ */
         div[data-testid="stChatMessage"]:has(.user-marker) {
             margin-right: auto !important; margin-left: 0 !important;
-            background-color: #0095F6 !important; color: white !important;
-            border: none !important; flex-direction: row-reverse !important;
+            flex-direction: row-reverse !important;
+            
+            /* خلفية زرقاء داكنة مطفية (Matte Blue) */
+            background-color: #0056b3 !important; 
+            color: #E0E0E0 !important;
+            
+            /* حواف حادة هندسية بدلاً من الدائرية */
+            border-radius: 8px !important; 
+            border-top-right-radius: 0 !important; /* حركة جمالية */
+            
+            padding: 12px 20px !important;
+            width: fit-content !important;
+            max-width: 80% !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
         }
-        div[data-testid="stChatMessage"]:has(.user-marker) p { color: white !important; }
         
+        div[data-testid="stChatMessage"]:has(.user-marker) p { color: #E0E0E0 !important; }
+
+        /* ============================================================
+           🏛️ تنسيق المديرة (AI) - تحرير المساحة
+           ============================================================ */
         div[data-testid="stChatMessage"]:has(.assistant-marker) {
             margin-left: auto !important; margin-right: 0 !important;
-            background-color: #262626 !important; border: 1px solid #333 !important;
             flex-direction: row !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            background-color: transparent !important;
+            border: none !important;
+            padding-top: 10px !important;
         }
-        .stChatMessage .stChatMessageAvatar { background-color: transparent !important; }
-        
-        /* ============================================================
-           🔴 التعديل الهندسي: قص الشريط وزرع الدبوس 🔴
-           ============================================================ */
 
-        /* 1. قص شريط الكتابة (Chat Input) */
+        /* 5. شريط الكتابة */
         [data-testid="stChatInput"] {
-            /* ندفعه عن اليسار بمقدار 60 بكسل عشان نترك مكان للدبوس */
             left: 60px !important; 
-            /* نقلل عرضه ليناسب الشاشة بعد الدفع */
             width: calc(100% - 70px) !important; 
             background-color: transparent !important;
         }
 
-        /* 2. تجميل مربع النص نفسه */
         [data-testid="stChatInput"] textarea {
-            background-color: #1E1E1E !important;
+            background-color: #1A1A1A !important;
             border: 1px solid #333 !important;
-            border-radius: 20px !important;
+            color: white !important;
+            border-radius: 8px !important; /* حواف حادة */
+        }
+        
+        [data-testid="stChatInput"] textarea:focus {
+            border-color: #fca311 !important;
+            box-shadow: none !important; /* إزالة التوهج للحفاظ على المينيماليزم */
         }
 
-        /* 3. إسقاط الدبوس في الفراغ المقصوص (الزاوية اليسرى) */
+        /* الدبوس */
         [data-testid="stPopover"] {
             position: fixed !important;
-            /* 👇 العب بهذا الرقم لتصعد أو تنزل الدبوس */
-            bottom: 5px !important; 
-            
-            /* 👇 العب بهذا الرقم لتحرك الدبوس يمين/يسار */
-            left: 491px !important;   
-            
+            bottom: 15px !important;
+            left: 15px !important;   
             z-index: 999999 !important;
             width: 50px !important;
-            height: 100px !important;
+            height: 50px !important;
         }
 
-        /* 4. شكل أيقونة الدبوس */
         [data-testid="stPopover"] > button {
-            background-color: #1E1E1E !important; /* خلفية نفس لون الشريط */
+            background-color: #1A1A1A !important;
             border: 1px solid #333 !important;
             color: #fca311 !important;
-            border-radius: 50% !important; /* دائري */
-            width: 45px !important;
-            height: 45px !important;
+            border-radius: 8px !important; /* مربع بحواف ناعمة قليلاً بدلاً من دائرة */
+            width: 48px !important;
+            height: 48px !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            padding: 0 !important;
         }
         
         [data-testid="stPopover"] > button:hover {
             border-color: #fca311 !important;
-            transform: scale(1.1);
+            color: #fff !important;
         }
 
-        /* إخفاء القائمة الجانبية */
         section[data-testid="stSidebar"] { display: none; }
-        .tiny-btn button { background: transparent !important; border: none; color: #777; padding: 0; }
-        .tiny-btn button:hover { color: white; }
+        .tiny-btn button { background: transparent !important; border: none; color: #555; padding: 0; }
+        .tiny-btn button:hover { color: #fca311; }
+        
+        #MainMenu, footer, header, .stDeployButton {visibility: hidden;}
+        
+        div[data-testid="stSelectbox"] > div > div {
+            background-color: #1A1A1A !important;
+            color: white !important;
+            border: 1px solid #333 !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -371,11 +408,25 @@ elif st.session_state.app_stage == 'main_chat':
         st.title("🏛️ AylaArc")
         st.caption("Architectural Studio Companion")
         st.markdown("---")
+        
+        # اختيار المرحلة
         selected_phase_key = st.selectbox("اختر مرحلة المشروع:", list(phases.keys()), index=0)
+        
         st.markdown("---")
-        if st.button("🗑️ New Session", use_container_width=True):
+        
+        # زر تنظيف المحادثة
+        if st.button("🧹 Clear Chat History", use_container_width=True):
+            if 'id' in st.session_state.project_data:
+                 # خيار إضافي: هل تريد حذفها من الداتا بيس أيضاً؟ هنا نحذفها من الشاشة فقط للسرعة
+                 pass
             st.session_state.messages = []
-            st.session_state.app_stage = 'profile'
+            st.rerun()
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # زر تسجيل الخروج (جديد 🔴)
+        if st.button("🚪 تسجيل خروج (Logout)", type="primary", use_container_width=True):
+            st.session_state.clear() # مسح كل الذاكرة
             st.rerun()
 
     p_data = st.session_state.get('project_data', {})
@@ -396,9 +447,14 @@ elif st.session_state.app_stage == 'main_chat':
 
     for i, message in enumerate(st.session_state.messages):
         role = message["role"]
-        avatar = "👷‍♀️" if role == "user" else "🏛️"
+        
+        # 🎨 تحديث الأيقونات لتكون أكثر احترافية ونضوجاً
+        # 👩‍💻 = مهندسة تعمل على حاسوب (بدلاً من الخوذة)
+        # 👩‍💼 = مديرة/Senior Architect (بدلاً من المبنى)
+        avatar = "👷‍♀️" if role == "user" else "👩‍💼"
         
         if st.session_state.edit_index == i:
+            # ... (باقي كود التعديل كما هو) ...
             with st.container(border=True):
                 st.caption("✏️ تعديل الرسالة:")
                 new_text = st.text_area("نص الرسالة:", value=message["content"], key=f"edit_area_{i}")
@@ -485,10 +541,14 @@ elif st.session_state.app_stage == 'main_chat':
 
     if st.session_state.trigger_generation:
         last_msg = st.session_state.messages[-1]
-        with st.chat_message("assistant", avatar="🏛️"):
+        
+        # 🟢 1. تعريف المتغير في الخارج لضمان وجوده دائماً
+        full_res = "" 
+        
+        with st.chat_message("assistant", avatar="👩‍💼"):
             st.markdown('<div class="assistant-marker"></div>', unsafe_allow_html=True)
             ph = st.empty()
-            full_res = ""
+            
             with st.status("Analyzing...", expanded=False) as status:
                 try:
                     res_stream = core_logic.stream_response(
@@ -506,26 +566,19 @@ elif st.session_state.app_stage == 'main_chat':
                 except Exception as e:
                     st.error(f"Error: {e}")
         
-        # 👇 التعديل الهندسي: نتأكد أن الرد ليس فارغاً قبل الحفظ
+        # 🟢 2. الآن يمكننا فحص المتغير بأمان لأنه معرف بالخارج
         if full_res and full_res.strip():
+            # إضافة الرد للذاكرة
             st.session_state.messages.append({"role": "assistant", "content": full_res})
             
+            # الحفظ في الداتا بيس
             if 'id' in st.session_state.project_data:
                 current_pid = st.session_state.project_data['id']
                 db_handler.save_message(current_pid, "assistant", full_res)
-        else:
-            # إذا كان الرد فارغاً (بسبب خطأ ما)، لا نحفظ شيئاً وننبه المستخدم
-            st.warning("⚠️ لم يتم استلام رد من النموذج. حاول مرة أخرى.")
         
-        st.session_state.trigger_generation = False
-        st.rerun()
+        elif not full_res:
+            st.warning("⚠️ لم يتم استلام رد من النموذج.")
         
-        # حفظ رد الـ AI
-        st.session_state.messages.append({"role": "assistant", "content": full_res})
-        
-        if 'id' in st.session_state.project_data:
-            current_pid = st.session_state.project_data['id']
-            db_handler.save_message(current_pid, "assistant", full_res)
-        
+        # 3. إغلاق التريقر وإعادة التشغيل لتحديث الشات
         st.session_state.trigger_generation = False
         st.rerun()
