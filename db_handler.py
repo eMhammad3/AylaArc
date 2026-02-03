@@ -88,6 +88,7 @@ def logout_user():
 def create_project(user_id, name, p_type, site, reqs):
     """
     إنشاء مشروع جديد وربطه بالمستخدم
+    (يبدأ دائماً بالمرحلة 1 مفتوحة)
     """
     try:
         response = supabase.table("projects").insert({
@@ -96,7 +97,8 @@ def create_project(user_id, name, p_type, site, reqs):
             "project_type": p_type,
             "site_context": site,
             "requirements": reqs,
-            "current_phase": "Phase 1"
+            "current_phase": "Phase 1",
+            "unlocked_phase": 1 # 🆕 جديد: يبدأ بالمستوى 1
         }).execute()
         return {"success": True, "data": response.data}
     except Exception as e:
@@ -109,6 +111,30 @@ def get_user_projects(user_id):
     try:
         response = supabase.table("projects").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
         return {"success": True, "data": response.data}
+    except Exception as e:
+        return {"error": str(e)}
+
+def get_project_by_id(project_id):
+    """
+    جلب بيانات مشروع واحد فقط بواسطة الـ ID
+    """
+    try:
+        response = supabase.table("projects").select("*").eq("id", project_id).execute()
+        if response.data:
+            return response.data[0]
+        return None
+    except Exception as e:
+        print(f"Error fetching project: {e}")
+        return None
+
+def update_project_phase(project_id, new_phase_level):
+    """
+    🆕 دالة جديدة لتحديث مستوى القفل للمشروع
+    (مثلاً الانتقال من 1 إلى 2)
+    """
+    try:
+        supabase.table("projects").update({"unlocked_phase": new_phase_level}).eq("id", project_id).execute()
+        return {"success": True}
     except Exception as e:
         return {"error": str(e)}
 
@@ -174,19 +200,6 @@ def get_active_user():
             return session.user
         return None
     except:
-        return None
-    
-def get_project_by_id(project_id):
-    """
-    جلب بيانات مشروع واحد فقط بواسطة الـ ID
-    """
-    try:
-        response = supabase.table("projects").select("*").eq("id", project_id).execute()
-        if response.data:
-            return response.data[0]
-        return None
-    except Exception as e:
-        print(f"Error fetching project: {e}")
         return None
     
 # ==========================================
