@@ -1,0 +1,22 @@
+name: Deploy AylaArc
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and Deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: 72.60.34.102
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/AylaArc
+            git pull
+            docker build -t ayla-app .
+            docker stop ayla-site || true
+            docker rm ayla-site || true
+            docker run -d --name ayla-site -p 8501:8501 --restart always ayla-app
