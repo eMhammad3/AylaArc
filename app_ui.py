@@ -5,7 +5,7 @@ import db_handler
 
 # 1. إعدادات الصفحة
 st.set_page_config(
-    page_title="AylaArc | المعمارية آيلا",
+    page_title="AylaArc | المعماري آيلا",
     page_icon="👷‍♀️",
     layout="wide",
     initial_sidebar_state="auto"
