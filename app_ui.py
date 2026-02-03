@@ -5,10 +5,10 @@ import db_handler
 
 # 1. إعدادات الصفحة
 st.set_page_config(
-    page_title="AylaArc",
-    page_icon="🏛️",
+    page_title="AylaArc | المعمارية آيلا",
+    page_icon="👷‍♀️",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="auto"
 )
 
 # 2. تهيئة الذاكرة والمراحل (النسخة الاحترافية: التوجيه عبر الرابط)
@@ -151,14 +151,20 @@ st.markdown("""
            🏛️ تنسيق المديرة (AI) - تحرير المساحة
            ============================================================ */
         div[data-testid="stChatMessage"]:has(.assistant-marker) {
-            margin-left: auto !important; margin-right: 0 !important;
-            flex-direction: row !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            background-color: transparent !important;
-            border: none !important;
-            padding-top: 10px !important;
-        }
+    margin: 0 !important; /* إلغاء الدفع لليمين */
+    width: 100% !important;
+    max-width: 100% !important;
+    background-color: transparent !important;
+    border: none !important;
+    padding: 20px 0 !important;
+    display: block !important; /* تغيير من flex إلى block ليمتد النص */
+}
+
+/* سطر إضافي لضمان تمدد المحتوى الداخلي لستريم ليت */
+div[data-testid="stChatMessage"]:has(.assistant-marker) div[data-testid="stChatMessageContent"] {
+    width: 100% !important;
+    max-width: 100% !important;
+}
 
         /* 5. شريط الكتابة */
         [data-testid="stChatInput"] {
@@ -206,7 +212,6 @@ st.markdown("""
             color: #fff !important;
         }
 
-        section[data-testid="stSidebar"] { display: none; }
         .tiny-btn button { background: transparent !important; border: none; color: #555; padding: 0; }
         .tiny-btn button:hover { color: #fca311; }
         
@@ -401,8 +406,6 @@ elif st.session_state.app_stage == 'project_form':
 # 💬 المرحلة الرابعة: الشات الرئيسي (Main Chat) - النسخة المحدثة
 # =============================================================================
 elif st.session_state.app_stage == 'main_chat':
-    
-    st.markdown("""<style>section[data-testid="stSidebar"] { display: block !important; }</style>""", unsafe_allow_html=True)
 
     with st.sidebar:
         st.title("🏛️ AylaArc")
