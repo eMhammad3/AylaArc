@@ -15,8 +15,16 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/AylaArc
-            git pull
+            # لضمان عدم حدوث تعارض يوقف المزامنة
+            git reset --hard origin/main 
+            git pull origin main
+            
+            # بناء "الصورة" الجديدة بالتعديلات
             docker build -t ayla-app .
+            
+            # إيقاف الحاوية القديمة وتبديلها بالجديدة
             docker stop ayla-site || true
             docker rm ayla-site || true
-            docker run -d --name ayla-site -p 8501:8501 --restart always ayla-app
+            
+            # تشغيل الموقع مع ربط ملف الـ env غصباً لضمان عمل Supabase
+            docker run -d --name ayla-site -p 8501:8501 --env-file .env --restart always ayla-app
