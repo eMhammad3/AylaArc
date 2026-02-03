@@ -20,7 +20,7 @@ supabase: Client = create_client(url, key)
 # ==========================================
 # ضع هنا الإيميلات المسموح لها فقط بالدخول
 ALLOWED_EMAILS = [
-    "admin@ayla.com",  # غير هذا لإيميلك الحقيقي
+    "emhammad3@gmail.com",  # غير هذا لإيميلك الحقيقي
     "partner@ayla.com" # غير هذا لإيميل شريكك
 ]
 
