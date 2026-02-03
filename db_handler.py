@@ -1,6 +1,6 @@
 import os
 import uuid
-from supabase import create_client, Client
+from supabase import create_client, Client, ClientOptions # 👈 إضافة ClientOptions
 from dotenv import load_dotenv
 
 # تحميل المفاتيح
@@ -12,16 +12,25 @@ key: str = os.environ.get("SUPABASE_KEY")
 if not url or not key:
     raise ValueError("⚠️ Supabase credentials not found in .env")
 
-# إنشاء الاتصال
-supabase: Client = create_client(url, key)
+# ==========================================
+# ⚙️ إعدادات العميل (الحل الجذري لمشاكل الجلسات)
+# ==========================================
+# نقوم بتعطيل حفظ الجلسة تلقائياً (persist_session=False)
+# هذا يمنع السيرفر من تذكر المستخدم الخطأ، ويجبرنا على الاعتماد على التوكن اللحظي
+opts = ClientOptions().replace(
+    persist_session=False, 
+    auto_refresh_token=False
+)
+
+# إنشاء الاتصال مع الإعدادات الجديدة
+supabase: Client = create_client(url, key, options=opts)
 
 # ==========================================
 # 🛑 قائمة المسموح لهم (Whitelist)
 # ==========================================
-# ضع هنا الإيميلات المسموح لها فقط بالدخول
 ALLOWED_EMAILS = [
-    "emhammad3@gmail.com",  # غير هذا لإيميلك الحقيقي
-    "partner@ayla.com" # غير هذا لإيميل شريكك
+    "emhammad3@gmail.com", 
+    "partner@ayla.com"
 ]
 
 # ==========================================
@@ -29,33 +38,31 @@ ALLOWED_EMAILS = [
 # ==========================================
 
 def signup_user(email, password, real_name, nickname):
-    # تم تعطيل التسجيل لأسباب أمنية
     return {"error": "عذراً، التسجيل مغلق حالياً. يرجى مراجعة الإدارة."}
 
 def login_user(email, password):
     """
-    تسجيل الدخول مع التحقق من القائمة البيضاء وتنظيف الجلسة
+    تسجيل الدخول مع تنظيف المدخلات (Safety Net)
     """
-    # 1. التحقق من القائمة البيضاء (Security Check) 🛡️
-    if email not in ALLOWED_EMAILS:
+    # 1. تنظيف المدخلات مرة أخرى هنا للأمان (Lower case & Strip)
+    clean_email = email.lower().strip()
+    
+    # 2. التحقق من القائمة البيضاء
+    if clean_email not in ALLOWED_EMAILS:
         return {"error": "هذا الحساب غير مصرح له بالدخول للنظام."}
 
     try:
-        # 2. تنظيف أي جلسة سابقة عالقة (Fix for Ghost Login) 👻
-        # هذه الخطوة تضمن أننا لا نستخدم توكن شخص آخر
-        try:
-            supabase.auth.sign_out()
-        except:
-            pass
-
-        # 3. تسجيل الدخول
+        # 3. محاولة تسجيل الدخول
         auth_response = supabase.auth.sign_in_with_password({
-            "email": email,
+            "email": clean_email,
             "password": password
         })
         
         user = auth_response.user
         
+        if not user:
+             return {"error": "بيانات الدخول غير صحيحة"}
+
         # 4. جلب بيانات البروفايل
         data = supabase.table("profiles").select("*").eq("id", user.id).execute()
         
@@ -63,13 +70,11 @@ def login_user(email, password):
         if data.data:
             profile = data.data[0]
 
-        # 5. خطوة مهمة جداً: نرجع البيانات للكود لكن لا نبقيها في المتغير العام
-        # (نعتمد على session_state في الواجهة فقط)
-        
         return {"success": True, "user": user, "profile": profile}
 
     except Exception as e:
-        return {"error": str(e)}
+        # رسالة خطأ أوضح
+        return {"error": f"فشل الدخول: {str(e)}"}
 
 def logout_user():
     try:

@@ -262,11 +262,12 @@ if st.session_state.app_stage == 'profile':
         
         tab1, tab2 = st.tabs(["تسجيل دخول", "إنشاء حساب جديد"])
         
+        # --- تاب تسجيل الدخول (يعمل بشكل طبيعي) ---
         with tab1:
             with st.form("login_form"):
                 email = st.text_input("البريد الإلكتروني:", key="login_email")
                 password = st.text_input("كلمة المرور:", type="password", key="login_pass")
-                submitted = st.form_submit_button("تسجيل الدخول 🔐")
+                submitted = st.form_submit_button("تسجيل الدخول 🔐", use_container_width=True)
                 
                 if submitted:
                     if email and password:
@@ -286,22 +287,18 @@ if st.session_state.app_stage == 'profile':
                     else:
                         st.warning("يرجى إدخال البريد وكلمة المرور.")
 
+        # --- تاب إنشاء الحساب (موجود ولكن مجمد 🔒) ---
         with tab2:
-            new_name = st.text_input("الاسم الحقيقي:", placeholder="مثال: إسراء أحمد")
-            new_nick = st.text_input("اللقب المفضل:", placeholder="مثال: سيرو")
-            new_email = st.text_input("البريد الإلكتروني:", key="signup_email")
-            new_pass = st.text_input("كلمة المرور:", type="password", key="signup_pass")
+            st.warning("⛔ التسجيل مغلق حالياً: النظام مخصص للأعضاء المصرح لهم فقط.")
             
-            if st.button("إنشاء حساب 🆕"):
-                if new_email and new_pass and new_name:
-                    with st.spinner("جاري إنشاء المستخدم..."):
-                        result = db_handler.signup_user(new_email, new_pass, new_name, new_nick)
-                        if "success" in result:
-                            st.success("تم إنشاء الحساب! سجل دخولك الآن.")
-                        else:
-                            st.error(f"خطأ: {result.get('error')}")
-                else:
-                    st.warning("يرجى ملء جميع البيانات.")
+            # الحقول موجودة لكن لا يمكن الكتابة فيها (disabled=True)
+            new_name = st.text_input("الاسم الحقيقي:", placeholder="غير متاح...", disabled=True)
+            new_nick = st.text_input("اللقب المفضل:", placeholder="غير متاح...", disabled=True)
+            new_email = st.text_input("البريد الإلكتروني:", key="signup_email", placeholder="Registration Closed", disabled=True)
+            new_pass = st.text_input("كلمة المرور:", type="password", key="signup_pass", disabled=True)
+            
+            # الزر أيضاً معطل
+            st.button("إنشاء حساب 🆕", disabled=True, use_container_width=True)
 
 # =============================================================================
 # 🏛️ المرحلة الثانية: لوحة المشاريع
