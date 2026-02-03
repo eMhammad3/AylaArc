@@ -82,6 +82,30 @@ def logout_user():
     except:
         pass
 
+def login_with_token(access_token):
+    """
+    تسجيل الدخول باستخدام التوكن المحفوظ في الرابط
+    """
+    try:
+        # التحقق من صحة التوكن عبر سوبابيس
+        res = supabase.auth.get_user(access_token)
+        user = res.user
+        
+        if not user:
+            return {"error": "Invalid Token"}
+
+        # إذا التوكن صحيح، نجلب البروفايل
+        data = supabase.table("profiles").select("*").eq("id", user.id).execute()
+        
+        profile = {}
+        if data.data:
+            profile = data.data[0]
+            
+        return {"success": True, "user": user, "profile": profile}
+        
+    except Exception as e:
+        return {"error": str(e)}
+
 # ==========================================
 # 📂 Project Management Functions
 # ==========================================
@@ -189,3 +213,104 @@ def upload_image(file_obj):
 
     except Exception as e:
         return {"error": str(e)}
+    
+    # ==========================================
+# 🧠 AI Memory & Summarization Functions
+# ==========================================
+
+def update_project_summary(project_id, summary_text):
+    """
+    تحديث ملخص المشروع (الذاكرة طويلة المدى)
+    """
+    try:
+        # نقوم بتحديث حقل summary للمشروع المحدد
+        supabase.table("projects").update({"summary": summary_text}).eq("id", project_id).execute()
+        return {"success": True}
+    except Exception as e:
+        print(f"Error updating summary: {e}")
+        return {"error": str(e)}
+
+def get_project_summary(project_id):
+    """
+    جلب الملخص الحالي للمشروع لحقنه في الذاكرة
+    """
+    try:
+        # نجلب فقط حقل الـ summary
+        response = supabase.table("projects").select("summary").eq("id", project_id).execute()
+        if response.data and response.data[0]:
+            return response.data[0].get("summary", "")
+        return ""
+    except Exception as e:
+        print(f"Error getting summary: {e}")
+        return ""
+    
+    # ==========================================
+# 🗑️ Deletion & Cleanup Functions
+# ==========================================
+
+def clear_project_chat_history(project_id):
+    """
+    حذف جميع رسائل الشات لمشروع معين من قاعدة البيانات
+    (يستخدم عند بدء محادثة جديدة لتخفيف الحمل)
+    """
+    try:
+        supabase.table("chat_messages").delete().eq("project_id", project_id).execute()
+        return {"success": True}
+    except Exception as e:
+        return {"error": str(e)}
+
+def delete_project_permanently(project_id):
+    """
+    حذف المشروع بالكامل (مع رسائله وملخصه) من قاعدة البيانات
+    """
+    try:
+        # 1. حذف الرسائل المرتبطة بالمشروع أولاً (للأمان)
+        supabase.table("chat_messages").delete().eq("project_id", project_id).execute()
+        
+        # 2. حذف المشروع نفسه
+        supabase.table("projects").delete().eq("id", project_id).execute()
+        
+        return {"success": True}
+    except Exception as e:
+        return {"error": str(e)}
+    
+    # ==========================================
+# 📜 Archiving System (History Viewer)
+# ==========================================
+
+def archive_current_chat(project_id, messages_list, summary_snapshot):
+    """
+    نقل المحادثة الحالية إلى جدول الأرشيف قبل حذفها
+    """
+    try:
+        # تحويل قائمة الرسائل إلى نص مقروء
+        formatted_text = ""
+        for msg in messages_list:
+            role = "👤 المعماري" if msg['role'] == 'user' else "👷‍♀️ آيلا"
+            content = msg['content']
+            if isinstance(content, list): # في حالة وجود صور
+                content = "[صورة + نص]"
+            formatted_text += f"{role}: {content}\n{'-'*20}\n"
+
+        data = {
+            "project_id": project_id,
+            "full_conversation": formatted_text,
+            "summary_snapshot": summary_snapshot
+        }
+        supabase.table("archives").insert(data).execute()
+        return {"success": True}
+    except Exception as e:
+        return {"error": str(e)}
+
+def get_project_archives(project_id):
+    """
+    جلب قائمة المحادثات المؤرشفة لهذا المشروع
+    """
+    try:
+        response = supabase.table("archives").select("*")\
+            .eq("project_id", project_id)\
+            .order("created_at", desc=True)\
+            .execute()
+        return response.data
+    except Exception as e:
+        return []

@@ -11,14 +11,38 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. تهيئة الذاكرة والمراحل (النسخة الآمنة)
+# 2. تهيئة الذاكرة والمراحل (النسخة الذكية مع الاستعادة 🧠)
 if 'app_stage' not in st.session_state:
-    active_user = None 
     
+    # --- 1. محاولة الاستعادة من الرابط (Auto-Login Logic) ---
+    # نفحص إذا كان هناك توكن في الرابط
+    token_in_url = st.query_params.get("auth_token")
+    
+    if token_in_url and 'user' not in st.session_state:
+        with st.spinner("جاري استعادة جلستك..."):
+            # نحاول الدخول باستخدام التوكن
+            res = db_handler.login_with_token(token_in_url)
+            if res.get("success"):
+                st.session_state.user = res["user"]
+            else:
+                # إذا التوكن خربان، نمسحه من الرابط
+                st.query_params.clear()
+    
+    # --- 2. المنطق المعتاد ---
+    active_user = None 
     if 'user' in st.session_state:
         active_user = st.session_state.user
 
     if active_user:
+        # نتأكد أن التوكن موجود في الرابط دائماً للحفاظ على الجلسة عند الريلود
+        try:
+            # نجلب التوكن الحالي
+            current_token = active_user.session.access_token if hasattr(active_user, 'session') else None
+            # ملاحظة: أحياناً object user لا يحتوي session مباشرة، لذا نعتمد على auth response
+            # للتبسيط، سنعتمد على أن الدخول يضع التوكن، لكن هنا سنثبت الوجود
+            pass 
+        except: pass
+
         st.session_state.user = active_user
         
         query_params = st.query_params
@@ -66,13 +90,14 @@ if 'phase2_unlocked' not in st.session_state:
 phases = {
     "0️⃣ محادثة عامة (General Chat)": "0️⃣ General Chat & Setup",
     "1️⃣ تحليل الموقع (Site Analysis)": "1️⃣ Site & Research (Active)",
-    "2️⃣ الفكرة والتوزيع (Concept & Zoning) 🔒": "2️⃣ Concept & Zoning", # لاحظ علامة القفل
-    "3️⃣ السكيتشات (Sketches) 🚧": "3️⃣ Sketches & Freehand (Locked)",
-    "4️⃣ المخططات (2D Plans) 🚧": "4️⃣ 2D Drafting / Plans (Locked)",
-    "5️⃣ المودل (3D Modeling) 🚧": "5️⃣ 3D Modeling (Locked)",
-    "6️⃣ الإظهار المعماري (Visualization) 🚧": "6️⃣ Visualization (Locked)",
-    "7️⃣ الماكيت (Physical Model) 🚧": "7️⃣ Physical Model (Locked)",
-    "8️⃣ التحكيم والتسليم (Jury & Submission) 🚧": "8️⃣ Jury & Marketing (Locked)"
+    "2️⃣ الفكرة والتوزيع (Concept & Zoning) 🔒": "2️⃣ Concept & Zoning",
+    # 👇👇 هنا التغيير: إضافة (قيد التطوير) للنص الظاهر 👇👇
+    "3️⃣ السكيتشات (Sketches) 🚧 (قيد التطوير)": "3️⃣ Sketches & Freehand (Locked)",
+    "4️⃣ المخططات (2D Plans) 🚧 (قيد التطوير)": "4️⃣ 2D Drafting / Plans (Locked)",
+    "5️⃣ المودل (3D Modeling) 🚧 (قيد التطوير)": "5️⃣ 3D Modeling (Locked)",
+    "6️⃣ الإظهار المعماري (Visualization) 🚧 (قيد التطوير)": "6️⃣ Visualization (Locked)",
+    "7️⃣ الماكيت (Physical Model) 🚧 (قيد التطوير)": "7️⃣ Physical Model (Locked)",
+    "8️⃣ التحكيم والتسليم (Jury & Submission) 🚧 (قيد التطوير)": "8️⃣ Jury & Marketing (Locked)"
 }
 
 # 3. الستايل (CSS) - النسخة الذهبية (Clean Cut) ✨
@@ -276,6 +301,12 @@ if st.session_state.app_stage == 'profile':
                             if "success" in result:
                                 st.success("تم تسجيل الدخول بنجاح!")
                                 st.session_state.user = result["user"]
+                                
+                                # 👇 أضف هذه الأسطر هنا بالضبط
+                                session = db_handler.supabase.auth.get_session()
+                                if session:
+                                    st.query_params["auth_token"] = session.access_token
+                                
                                 profile = result["profile"]
                                 st.session_state.project_data["user_real_name"] = profile.get("real_name", "Architect")
                                 st.session_state.project_data["user_nickname"] = profile.get("nickname", "Arch")
@@ -307,12 +338,25 @@ elif st.session_state.app_stage == 'project_landing':
     user = st.session_state.get('user')
     profile = st.session_state.get('project_data', {}) 
 
-    st.markdown(f"""
-        <h1 style='text-align: right; color: #fca311;'>مرحباً المعمارية {profile.get('user_real_name', 'إسراء')} 👋</h1>
+    # 👇👇 تعديل هنا: استخدام أعمدة لوضع زر الخروج بجانب الترحيب 👇👇
+    col_header, col_logout = st.columns([4, 1])
+    with col_header:
+        st.markdown(f"""
+            <h1 style='text-align: right; color: #fca311; margin-bottom: 0;'>مرحباً المعمارية {profile.get('user_real_name', 'إسراء')} 👋</h1>
+        """, unsafe_allow_html=True)
+    with col_logout:
+        st.markdown("<br>", unsafe_allow_html=True) # مسافة بسيطة
+        if st.button("🚪 تسجيل خروج", key="landing_logout", type="primary", use_container_width=True):
+            st.session_state.clear()
+            st.query_params.clear()
+            db_handler.logout_user()
+            st.rerun()
+            
+    st.markdown("""
         <p style='text-align: right; color: #888;'>إليك مشاريعك المحفوظة في الأرشيف:</p>
-        <hr style='border-color: #333;'>
+        <hr style='border-color: #333; margin-top: 0;'>
     """, unsafe_allow_html=True)
-
+  
     with st.spinner("جاري استدعاء المخططات..."):
         response = db_handler.get_user_projects(user.id)
         
@@ -330,6 +374,7 @@ elif st.session_state.app_stage == 'project_landing':
                         st.subheader(f"📂 {p['name']}")
                         st.caption(f"Type: {p['project_type']} | Date: {p['created_at'][:10]}")
                     with c2:
+                        # 1. زر الفتح (موجود سابقاً)
                         if st.button("فتح 🔓", key=f"open_{p['id']}", use_container_width=True):
                             st.query_params["pid"] = p['id']
                             st.session_state.project_data = {
@@ -346,6 +391,27 @@ elif st.session_state.app_stage == 'project_landing':
                                 st.session_state.messages = history
                                 st.session_state.app_stage = 'main_chat'
                             st.rerun()
+                        
+                        # 👇👇 الإضافة الجديدة: زر الحذف مع تأكيد (Popover) 👇👇
+                        st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True) # مسافة جمالية
+                        
+                        # نستخدم popover كحماية من الضغط الخاطئ
+                        with st.popover("حذف 🗑️", use_container_width=True):
+                            st.caption(f"هل أنت متأكد من حذف مشروع **{p['name']}**؟")
+                            st.caption("⚠️ هذا الإجراء نهائي ولا يمكن التراجع عنه.")
+                            
+                            if st.button("نعم، تأكيد الحذف", key=f"confirm_del_btn_{p['id']}", type="primary", use_container_width=True):
+                                with st.spinner("جاري إزالة المشروع من السجلات..."):
+                                    # استدعاء دالة الحذف النهائي التي برمجناها سابقاً
+                                    del_res = db_handler.delete_project_permanently(p['id'])
+                                    
+                                    if del_res.get("success"):
+                                        st.toast(f"تم حذف مشروع {p['name']} بنجاح.", icon="🗑️")
+                                        time.sleep(0.8) # وقت قصير لظهور التوست
+                                        st.rerun() # تحديث الصفحة لإخفاء المشروع المحذوف
+                                    else:
+                                        st.error(f"فشل الحذف: {del_res.get('error')}")
+                        # 👆👆 انتهت الإضافة 👆👆
 
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("➕ مشروع جديد (New Project)", use_container_width=True):
@@ -358,6 +424,13 @@ elif st.session_state.app_stage == 'project_landing':
 elif st.session_state.app_stage == 'project_form':
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        # 👇👇 إضافة زر الرجوع هنا 👇👇
+        if st.button("⬅️ رجوع للقائمة", use_container_width=True):
+            st.session_state.app_stage = 'project_landing'
+            st.rerun()
+        st.markdown("<br>", unsafe_allow_html=True)
+        # 👆👆 انتهت الإضافة 👆👆
+
         st.markdown("<h2 style='text-align: right; color: #fca311;'>📝 بيانات المشروع الجديد</h2>", unsafe_allow_html=True)
         st.caption("هذه البيانات سيتم حقنها في عقل النموذج.")
         with st.form("project_setup_form"):
@@ -403,18 +476,82 @@ elif st.session_state.app_stage == 'main_chat':
     with st.sidebar:
         st.title("🏛️ AylaArc")
         st.caption("Architectural Studio Companion")
+        
+        # --- 1. زر الرجوع للقائمة الرئيسية ---
+        if st.button("🔙 العودة للمشاريع", use_container_width=True):
+            st.session_state.app_stage = 'project_landing'
+            st.session_state.messages = [] 
+            st.rerun()
+            
         st.markdown("---")
         
-        # اختيار المرحلة (القائمة المحدثة)
+        # اختيار المرحلة
         selected_phase_key = st.selectbox("اختر مرحلة المشروع:", list(phases.keys()), index=0)
         
         st.markdown("---")
-        if st.button("🧹 Clear Chat History", use_container_width=True):
+        
+        # --- 2. زر محادثة جديدة (النسخة الآمنة مع الأرشيف) 🛡️ ---
+        if st.button("✨ محادثة جديدة (أرشفة + تخفيف)", help="يحفظ المحادثة الحالية في الأرشيف، يلخصها للذاكرة، ثم يفرغ الشات.", use_container_width=True):
+            
+            if len(st.session_state.messages) > 0:
+                with st.spinner("جاري الأرشفة وتنظيف المكتب..."):
+                    try:
+                        pid = st.session_state.project_data['id']
+                        
+                        # أ) التلخيص والحفظ في الذاكرة الحية
+                        old_sum = db_handler.get_project_summary(pid)
+                        new_sum = old_sum
+                        if len(st.session_state.messages) > 2:
+                            new_sum = core_logic.generate_summary(st.session_state.messages, old_sum)
+                            db_handler.update_project_summary(pid, new_sum)
+                        
+                        # ب) الأرشفة (الجديد! 🆕): نحفظ النص الكامل في جدول الأرشيف
+                        db_handler.archive_current_chat(pid, st.session_state.messages, new_sum)
+                        
+                        # ج) التنظيف: الآن نحذف من الشات النشط بقلب مطمئن
+                        db_handler.clear_project_chat_history(pid)
+                        
+                        st.toast("تمت الأرشفة وبدء صفحة جديدة!", icon="✅")
+                    except Exception as e:
+                        st.error(f"خطأ: {e}")
+            
             st.session_state.messages = []
+            time.sleep(1)
             st.rerun()
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🚪 تسجيل خروج (Logout)", type="primary", use_container_width=True):
+
+        # --- 3. خانة المحادثات السابقة (طلبك) 📜 ---
+        with st.expander("📜 أرشيف المحادثات السابقة"):
+            pid = st.session_state.project_data.get('id')
+            archives = db_handler.get_project_archives(pid)
+            
+            if not archives:
+                st.caption("لا توجد محادثات مؤرشفة بعد.")
+            else:
+                for arch in archives:
+                    # عرض التاريخ كعنوان
+                    date_label = arch['created_at'][:10] + " " + arch['created_at'][11:16]
+                    if st.button(f"📅 {date_label}", key=f"arch_{arch['id']}", use_container_width=True):
+                        # عرض المحادثة في نافذة منبثقة (Modal)
+                        @st.dialog("📜 تفاصيل المحادثة المؤرشفة")
+                        def show_archive_content(text):
+                            st.text_area("", value=text, height=400, disabled=True)
+                        show_archive_content(arch['full_conversation'])
+
+        st.markdown("---")
+        
+        # --- 4. منطقة الخطر ---
+        with st.expander("🗑️ منطقة الخطر"):
+            st.warning("حذف المشروع نهائياً")
+            if st.button("تأكيد الحذف", type="primary", use_container_width=True):
+                pid = st.session_state.project_data['id']
+                db_handler.delete_project_permanently(pid)
+                st.session_state.app_stage = 'project_landing'
+                st.rerun()
+
+        if st.button("🚪 تسجيل خروج", type="secondary", use_container_width=True):
             st.session_state.clear()
+            st.query_params.clear() 
+            db_handler.logout_user()
             st.rerun()
 
     p_data = st.session_state.get('project_data', {})
@@ -427,32 +564,21 @@ elif st.session_state.app_stage == 'main_chat':
     # 🕵️‍♂️ منطق الأقفال (The Guard System)
     # ==================================================
     
-    # تحديد نوع المرحلة الحالية بناءً على الاختيار
     is_active_phase = False
     is_locked_phase = False
     is_dev_phase = False
 
-    # المرحلتين 0 و 1 مفتوحات دائماً
     if selected_phase_key.startswith("0️⃣") or selected_phase_key.startswith("1️⃣"):
         is_active_phase = True
-    
-    # المرحلة 2 (مقفلة إلا إذا تم فتحها)
     elif selected_phase_key.startswith("2️⃣"):
         if st.session_state.phase2_unlocked:
             is_active_phase = True
         else:
             is_locked_phase = True
-            
-    # بقية المراحل (قيد التطوير)
     else:
         is_dev_phase = True
 
-    # ==================================================
-    # 📺 العرض بناءً على الحالة (View Controller)
-    # ==================================================
-
     if is_locked_phase:
-        # --- عرض القفل للمرحلة الثانية ---
         st.markdown("""
             <div class='lock-overlay'>
                 <h1 style='font-size: 60px;'>🔒</h1>
@@ -461,11 +587,9 @@ elif st.session_state.app_stage == 'main_chat':
                 الانتقال للفكرة دون تحليل دقيق هو "انتحار تصميمي".</p>
             </div>
         """, unsafe_allow_html=True)
-        
         col_L1, col_L2, col_L3 = st.columns([1, 2, 1])
         with col_L2:
             st.markdown("<br>", unsafe_allow_html=True)
-            # زر المخاطرة
             if st.button("⚠️ أنا أتحمل المسؤولية (دخول مجازفة)", use_container_width=True, type="primary"):
                 st.session_state.phase2_unlocked = True
                 st.toast("تم كسر القفل! آيلا ستراقب قراراتك بدقة...", icon="👀")
@@ -473,7 +597,6 @@ elif st.session_state.app_stage == 'main_chat':
                 st.rerun()
 
     elif is_dev_phase:
-        # --- عرض قيد التطوير للبقية ---
         st.markdown("""
             <div class='lock-overlay' style='border-color: #fca311; opacity: 0.7;'>
                 <h1 style='font-size: 60px;'>🚧</h1>
@@ -485,14 +608,22 @@ elif st.session_state.app_stage == 'main_chat':
 
     else:
         # --- (Active Mode) عرض الشات الطبيعي ---
-        
         if not st.session_state.messages:
             real_name = p_data.get('user_real_name', 'إسراء')
             nickname = p_data.get('user_nickname', 'سيرو')
-            welcome_msg = f"أهلاً يا زميلتي العزيزة {real_name} (أو مثل ما تحبين أسميج: {nickname})! 👷‍♀️\n\nتم استيعاب مشروع **{project_title}** بنجاح.\nإحنا حالياً بـ **{phases[selected_phase_key]}**. جاهز أشوف شغلك (صور/مخططات) أو نتناقش."
+            
+            # نجلب الملخص إن وجد لنشعر المستخدم بالاستمرارية رغم الصفحة البيضاء
+            current_pid = st.session_state.project_data['id']
+            existing_summary = db_handler.get_project_summary(current_pid)
+            
+            if existing_summary:
+                welcome_msg = f"أهلاً {real_name}.. فتحنا صفحة جديدة نظيفة ✨.\nأنا راجعت ذاكرتي ومستحضرة تفاصيل المشروع (الموقع، المتطلبات، والقرارات السابقة). كملي، شنو الخطوة الجاية؟"
+            else:
+                welcome_msg = f"أهلاً يا زميلتي العزيزة {real_name} (أو مثل ما تحبين أسميج: {nickname})! 👷‍♀️\n\nتم استيعاب مشروع **{project_title}** بنجاح.\nإحنا حالياً بـ **{phases[selected_phase_key]}**. جاهز أشوف شغلك (صور/مخططات) أو نتناقش."
+            
             st.session_state.messages.append({"role": "assistant", "content": welcome_msg})
 
-        # --- 1. عرض الرسائل ---
+        # --- عرض الرسائل ---
         user_indices = [i for i, m in enumerate(st.session_state.messages) if m['role'] == 'user']
         last_user_index = user_indices[-1] if user_indices else -1
 
@@ -523,7 +654,6 @@ elif st.session_state.app_stage == 'main_chat':
                         st.image(message["image"], width=300)
                     st.markdown(message["content"])
                 
-                # أزرار التعديل والحذف
                 if role == "user" and i == last_user_index:
                     c1, c2, c3 = st.columns([0.05, 0.05, 0.9])
                     with c1:
@@ -542,7 +672,7 @@ elif st.session_state.app_stage == 'main_chat':
                             st.rerun()
                         st.markdown('</div>', unsafe_allow_html=True)
 
-        # --- 2. منطقة الإدخال ---
+        # --- منطقة الإدخال ---
         with st.popover("📎", use_container_width=False):
             st.caption("📂 رفع ملفات المشروع")
             uploaded_file = st.file_uploader("", type=["png", "jpg", "jpeg"], key="chat_uploader")
@@ -552,7 +682,6 @@ elif st.session_state.app_stage == 'main_chat':
 
         prompt = st.chat_input("سولفلي عن مشروعك...")
 
-        # --- 3. المعالجة ---
         if prompt:
             with st.chat_message("user", avatar="👷‍♀️"):
                 st.markdown('<div class="user-marker"></div>', unsafe_allow_html=True)
@@ -584,12 +713,16 @@ elif st.session_state.app_stage == 'main_chat':
                 full_res = ""
                 with st.status("Analyzing...", expanded=False) as status:
                     try:
+                        current_pid = st.session_state.project_data['id']
+                        memory_txt = db_handler.get_project_summary(current_pid)
+
                         res_stream = core_logic.stream_response(
                             last_msg["content"], 
                             st.session_state.messages[:-1], 
                             phases[selected_phase_key], 
                             st.session_state.project_data,
-                            image_file=last_msg.get("image")
+                            image_file=last_msg.get("image"),
+                            summary_text=memory_txt
                         )
                         for chunk in res_stream:
                             full_res += chunk

@@ -170,7 +170,7 @@ Phase 6: Final Production
 """
 
 
-def get_system_prompt(phase, project_data=None, history_len=0, is_risk_mode=False):
+def get_system_prompt(phase, project_data=None, history_len=0, is_risk_mode=False, summary_text=""):
     """
     Constructs the 'Brain' of Ayla with a BALANCED Persona.
     CACHING STRATEGY: Static Content (Criteria + Competitors) FIRST. Dynamic Content LAST.
@@ -237,6 +237,18 @@ def get_system_prompt(phase, project_data=None, history_len=0, is_risk_mode=Fals
     date_str = now.strftime("%A, %Y-%m-%d")
     time_info = f"CURRENT DATE: {date_str}. Use this to check deadlines."
 
+# ب) الذاكرة طويلة المدى (Memory Injection) 🧠✨
+    memory_section = ""
+    if summary_text and len(summary_text) > 10:
+        memory_section = f"""
+        === 🧠 LONG-TERM MEMORY (CRITICAL CONTEXT) ===
+        The following is a summary of previous sessions with this student. 
+        USE THIS to maintain continuity and not ask about things already decided.
+        
+        [START MEMORY]
+        {summary_text}
+        [END MEMORY]
+        """
     # ب) وعي المخاطرة (RISK MODE AWARENESS) 🚨
     risk_instruction = ""
     if is_risk_mode:
@@ -314,10 +326,12 @@ def get_system_prompt(phase, project_data=None, history_len=0, is_risk_mode=Fals
     {static_ref}
     
     {project_context_section}
-    
+
+    {memory_section}
+
     {time_info}
 
-    {risk_instruction}  # 👈👈👈 ضيف هذا السطر هنا بضبط
+    {risk_instruction}  
     
     === CURRENT PHASE INSTRUCTIONS ===
     {phase_lens}
@@ -349,7 +363,7 @@ def encode_image(image_file):
     """تحويل الصورة إلى نص (Base64) ليفهمها OpenRouter"""
     return base64.b64encode(image_file.read()).decode('utf-8')
 
-def stream_response(user_input, chat_history, phase, project_data=None, image_file=None, is_risk_mode=False): # 👈 ضيفنا المتغير بالاخير
+def stream_response(user_input, chat_history, phase, project_data=None, image_file=None, is_risk_mode=False, summary_text=""): # 👈 ضيفنا المتغير بالاخير
     """
     العقل المدبر: يختار الطريق (جوجل أو أوبن راوتر) بناءً على الإعدادات.
     """
@@ -357,7 +371,7 @@ def stream_response(user_input, chat_history, phase, project_data=None, image_fi
     history_len = len(chat_history)
     
     # تجهيز "عقل" المهندس المعماري
-    system_instruction = get_system_prompt(phase, project_data, history_len, is_risk_mode) # 👈 مررنا المتغير هنا
+    system_instruction = get_system_prompt(phase, project_data, history_len, is_risk_mode, summary_text)
     
     # ---------------------------------------------------------
     # المسار الأول: OpenRouter (الخيار الحالي المفضل)
@@ -453,3 +467,52 @@ def stream_response(user_input, chat_history, phase, project_data=None, image_fi
                 if chunk.text: yield chunk.text
         except Exception as e:
              yield f"Google Error: {str(e)}"
+
+             # ==============================================================================
+# 🧠 NEW: The Summarizer Agent (Writer)
+# ==============================================================================
+
+def generate_summary(chat_history, old_summary=""):
+    """
+    وظيفة هذه الدالة: قراءة المحادثة الحالية + الملخص القديم، 
+    وإخراج ملخص جديد محدث ومضغوط لحفظه في الداتا بيس.
+    """
+    if not or_client:
+        return "Error: No Client"
+
+    # تحويل الشات إلى نص بسيط
+    chat_text = ""
+    for msg in chat_history:
+        role = "Student" if msg['role'] == 'user' else "Ayla"
+        content = msg['content'] if isinstance(msg['content'], str) else "[Image Uploaded]"
+        chat_text += f"{role}: {content}\n"
+
+    # برومبت خاص للتلخيص (Archivist Persona)
+    summary_prompt = f"""
+    You are an expert Architectural Archivist.
+    
+    Task: Update the Project Memory based on the new conversation.
+    
+    [OLD MEMORY]:
+    {old_summary}
+    
+    [NEW CONVERSATION]:
+    {chat_text}
+    
+    INSTRUCTIONS:
+    1. Combine the old memory and new details into a single cohesive summary (max 400 words).
+    2. Focus on: Design Decisions made, Constraints identified, User preferences, and Current Progress.
+    3. Ignore: Small talk, greetings, or temporary errors.
+    4. Output ONLY the summary text.
+    """
+
+    try:
+        response = or_client.chat.completions.create(
+            model="google/gemini-2.0-flash-001", # نستخدم موديل سريع ورخيص
+            messages=[{"role": "user", "content": summary_prompt}],
+            temperature=0.3 # حرارة منخفضة للدقة
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"Summarization Error: {e}")
+        return old_summary # في حال الفشل، أعد القديم كما هو
