@@ -955,7 +955,7 @@ elif st.session_state.app_stage == 'project_form':
                         # ندمج المساحة مع الموقع لضمان وصولها لآيلا بدون تغيير هيكل الداتابيز
                         full_site_info = f"{p_site}\nالمساحة: {p_area}"
                         
-                        result = db_handler.create_project(user_id, p_name, p_type, full_site_info, p_req)
+                        result = db_handler.create_project(user_id, p_name, p_type, p_site, p_req, p_area)
                     
                     if "success" in result:
                         st.success("تم الحفظ بنجاح!")
@@ -970,6 +970,7 @@ elif st.session_state.app_stage == 'project_form':
                             "name": new_project['name'],
                             "type": new_project['project_type'],
                             "site": new_project['site_context'],
+                            "site_area": new_project.get('site_area', 'غير محددة'), # 👈 السطر الجديد
                             "requirements": new_project['requirements']
                         }
                         time.sleep(1)
@@ -1310,6 +1311,7 @@ elif st.session_state.app_stage == 'main_chat':
             st.session_state.trigger_generation = False
 
             st.rerun()
+
 
 
 
