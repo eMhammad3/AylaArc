@@ -883,7 +883,7 @@ elif st.session_state.app_stage == 'project_landing':
             st.markdown("""
                 <div style='text-align: center; padding: 100px 20px;'>
                     <div style="font-size: 4rem; opacity: 0.2; margin-bottom: 20px;">📐</div>
-                    <h2 style='color: #666;'>المرسم بانتظار فكرتكِ الأولى..</h2>
+                    <h2 style='color: #666;'>المرسم بانتظار خطواتكِ الأولى..</h2>
                     <p style='color: #444;'>إسراء، آيلا جاهزة لمرافقتكِ في تحدي هذا الكورس.</p>
                 </div>
             """, unsafe_allow_html=True)
@@ -1314,6 +1314,7 @@ elif st.session_state.app_stage == 'main_chat':
             st.session_state.trigger_generation = False
 
             st.rerun()
+
 
 
 
