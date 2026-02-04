@@ -674,38 +674,18 @@ if st.session_state.app_stage == 'profile':
                  # نستخدم حاوية لتطبيق ستايل الحقول الشفافة
                  with st.container():
                      st.markdown('<div class="static-info-field">', unsafe_allow_html=True)
-                     
-                     # الصف الأول: الاسم والبلد
-                     row1_col1, row1_col2 = st.columns(2)
-                     with row1_col1:
+                     col_info1, col_info2 = st.columns(2)
+                     with col_info1:
+                          # الاسم واللقب (قراءة فقط - شفاف)
                           st.text_input("الاسم:", value="اسراء احمد", disabled=True, key="static_name")
-                     with row1_col2:
-                          st.text_input("البلد:", value="العراق", disabled=True, key="static_country")
-
-                     # الصف الثاني: اللقب والجامعة
-                     row2_col1, row2_col2 = st.columns(2)
-                     with row2_col1:
                           st.text_input("اللقب المفضل:", value="سيرو", disabled=True, key="static_nick")
-                     with row2_col2:
+                     with col_info2:
+                          # البلد والجامعة (قراءة فقط - شفاف)
+                          st.text_input("البلد:", value="العراق", disabled=True, key="static_country")
                           st.text_input("الجامعة:", value="جامعة كربلاء", disabled=True, key="static_uni")
-
-                     # الصف الثالث: المرحلة والمادة
-                     row3_col1, row3_col2 = st.columns(2)
-                     with row3_col1:
-                          st.text_input("المرحلة:", value="الثانية", disabled=True, key="static_stage")
-                     with row3_col2:
-                          st.text_input("المادة:", value="دزاين - Design", disabled=True, key="static_subject")
-
-                     # الصف الرابع: المنافسين والدكتور
-                     row4_col1, row4_col2 = st.columns(2)
-                     with row4_col1:
-                          st.text_input("عدد المنافسين مع رفع ملفاتهم:", value="45", disabled=True, key="static_competitors")
-                     with row4_col2:
-                          st.text_input("اسم دكتور المادة (رئيس لجنة ال Jury) :", value="د. أنور", disabled=True, key="static_jury")
                      
-                     # الصف الأخير: البريد (يأخذ العرض كاملاً للتميز)
+                     # البريد المشفر (قراءة فقط - شفاف)
                      st.text_input("البريد الإلكتروني المعتمد:", value="2isr*****med@gmail.com", disabled=True, key="static_email")
-                     
                      st.markdown('</div>', unsafe_allow_html=True)
 
                  st.markdown("---")
@@ -923,25 +903,59 @@ elif st.session_state.app_stage == 'project_form':
 
         st.markdown("<h2 style='text-align: right; color: #fca311;'>📝 بيانات المشروع الجديد</h2>", unsafe_allow_html=True)
         st.caption("")
+        
         with st.form("project_setup_form"):
-            p_name = st.text_input("اسم المشروع:", placeholder="مثال: مركز ثقافي...")
-            p_type = st.selectbox("نوع المشروع:", ["سكنى (Residential)", "ثقافي / عام (Cultural/Public)", "تجاري (Commercial)", "لاندسكيب (Landscape)", "تصميم حضري (Urban Design)", "مباني تعليمية (Educational)", "أخرى..."])
-            selected_type = st.selectbox("نوع المشروع:", project_types)
+            # --- القسم الأول: معلومات أكاديمية ثابتة (مقفلة تماماً) ---
+            st.markdown("<p style='color: #888; font-size: 0.8rem; margin-bottom: 10px;'>🏛️ السجل الأكاديمي المثبت:</p>", unsafe_allow_html=True)
             
-            # إذا اختار "أخرى"، يظهر حقل كتابة
+            row_static_1, row_static_2 = st.columns(2)
+            with row_static_1:
+                st.text_input("المرحلة:", value="الثانية", disabled=True, key="p_fixed_stage")
+                st.text_input("المادة:", value="دزاين - Design", disabled=True, key="p_fixed_subject")
+            with row_static_2:
+                st.text_input("عدد المنافسين مع رفع ملفاتهم:", value="45", disabled=True, key="p_fixed_comp")
+                st.text_input("اسم دكتور المادة (رئيس لجنة ال Jury):", value="د. أنور", disabled=True, key="p_fixed_dr")
+            
+            st.markdown("<hr style='margin: 15px 0; border-color: rgba(252, 163, 17, 0.1);'>", unsafe_allow_html=True)
+            
+            # --- القسم الثاني: تفاصيل المشروع (المتغيرة) ---
+            p_name = st.text_input("اسم المشروع:", placeholder="مثال: مركز ثقافي...")
+            
+            # نوع المشروع مع التعريب والخيار اليدوي
+            project_options = [
+                "سكنى (Residential)", 
+                "ثقافي / عام (Cultural/Public)", 
+                "تجاري (Commercial)", 
+                "لاندسكيب (Landscape)", 
+                "تصميم حضري (Urban Design)", 
+                "مباني تعليمية (Educational)", 
+                "أخرى (كتابة يدوية)..."
+            ]
+            selected_type = st.selectbox("نوع المشروع:", project_options)
+            
             if selected_type == "أخرى (كتابة يدوية)...":
-                p_type = st.text_input("اكتبي نوع المشروع هنا:", placeholder="مثال: مستشفى، فندق...")
+                p_type = st.text_input("اكتبي نوع المشروع هنا:", placeholder="مثال: فندق، مستشفى...")
             else:
                 p_type = selected_type
+
             p_site = st.text_area("تفاصيل الموقع (Site Context):")
-            p_area = st.text_input("مساحة الأرض (متر مربع):", placeholder="مثال: 400 م2")
+            
+            # 💡 الحقل المنسي المهم جداً: المساحة
+            p_area = st.text_input("مساحة الأرض (م2) أو الأبعاد:", placeholder="مثال: 600 متر مربع")
+            
             p_req = st.text_area("أهم المتطلبات (Program):")
+            
             submitted = st.form_submit_button("🚀 حفظ وبدء الرحلة")
+            
             if submitted:
                 if p_name and p_req:
                     with st.spinner("جاري أرشفة المشروع في السحابة..."):
                         user_id = st.session_state.user.id
-                        result = db_handler.create_project(user_id, p_name, p_type, p_site, p_req)
+                        
+                        # ندمج المساحة مع الموقع لضمان وصولها لآيلا بدون تغيير هيكل الداتابيز
+                        full_site_info = f"{p_site}\nالمساحة: {p_area}"
+                        
+                        result = db_handler.create_project(user_id, p_name, p_type, full_site_info, p_req)
                     
                     if "success" in result:
                         st.success("تم الحفظ بنجاح!")
@@ -959,13 +973,12 @@ elif st.session_state.app_stage == 'project_form':
                             "requirements": new_project['requirements']
                         }
                         time.sleep(1)
-                        st.session_state.app_stage = 'main_chat'
+                        st.session_state.app_stage = 'project_dashboard'
                         st.rerun()
                     else:
                         st.error(f"فشل الحفظ: {result.get('error')}")
                 else:
                     st.error("يرجى ملء الحقول الأساسية.")
-
 # =============================================================================
 # 💬 المرحلة الرابعة: الشات الرئيسي (Main Chat) - نظام الأقفال 🔒
 # =============================================================================
@@ -1297,4 +1310,5 @@ elif st.session_state.app_stage == 'main_chat':
             st.session_state.trigger_generation = False
 
             st.rerun()
+
 
