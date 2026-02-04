@@ -1225,7 +1225,7 @@ elif st.session_state.app_stage == 'main_chat':
         if 'trigger_generation' not in st.session_state:
             st.session_state.trigger_generation = False
 
-        prompt = st.chat_input("سولفلي عن مشروعك...")
+        prompt = st.chat_input("سولفيلي...")
 
         if prompt:
             with st.chat_message("user", avatar="👷‍♀️"):
@@ -1315,6 +1315,7 @@ elif st.session_state.app_stage == 'main_chat':
             st.session_state.trigger_generation = False
 
             st.rerun()
+
 
 
 
