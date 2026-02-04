@@ -38,73 +38,65 @@ ALLOWED_EMAILS = [
 # ==========================================
 
 def signup_user(email, password, real_name, nickname):
-    return {"error": "عذراً، التسجيل مغلق حالياً. يرجى مراجعة الإدارة."}
+    """
+    نسخة محصنة: تسجل المستخدم وتنشئ البروفايل بدون أخطاء تكرار
+    """
+    try:
+        # 1. محاولة إنشاء المستخدم في Auth
+        auth_res = supabase.auth.sign_up({
+            "email": email,
+            "password": password
+        })
+        
+        user = auth_res.user
+        if not user:
+            return {"error": "فشل إنشاء الحساب، قد يكون الحساب مسجلاً مسبقاً أو هناك مشكلة في الاتصال."}
+
+        # 2. إنشاء أو تحديث البروفايل (UPSERT)
+        # نستخدم upsert لضمان أنه إذا كان السطر موجوداً لا يظهر خطأ Duplicate Key
+        supabase.table("profiles").upsert({
+            "id": user.id,
+            "real_name": real_name,
+            "nickname": nickname
+        }, on_conflict='id').execute()
+
+        return {"success": True, "user": user}
+        
+    except Exception as e:
+        # إذا كان الخطأ هو أن المستخدم موجود أصلاً، نعتبره نجاحاً جزئياً أو نوضح السبب
+        err_msg = str(e)
+        if "already registered" in err_msg.lower():
+            return {"error": "هذا الحساب مسجل مسبقاً، يرجى تسجيل الدخول مباشرة."}
+        return {"error": err_msg}
 
 def login_user(email, password):
     """
-    تسجيل الدخول مع تنظيف المدخلات (Safety Net)
+    إعادة دالة تسجيل الدخول المفقودة (المسؤولة عن حل خطأ image_ff69e8.png)
     """
-    # 1. تنظيف المدخلات مرة أخرى هنا للأمان (Lower case & Strip)
     clean_email = email.lower().strip()
     
-    # 2. التحقق من القائمة البيضاء
+    # التحقق من القائمة البيضاء (تأكد أن ALLOWED_EMAILS معرفة في أعلى الملف)
     if clean_email not in ALLOWED_EMAILS:
         return {"error": "هذا الحساب غير مصرح له بالدخول للنظام."}
 
     try:
-        # 3. محاولة تسجيل الدخول
         auth_response = supabase.auth.sign_in_with_password({
             "email": clean_email,
             "password": password
         })
         
         user = auth_response.user
-        
         if not user:
-             return {"error": "بيانات الدخول غير صحيحة"}
+            return {"error": "بيانات الدخول غير صحيحة"}
 
-        # 4. جلب بيانات البروفايل
+        # جلب البروفايل
         data = supabase.table("profiles").select("*").eq("id", user.id).execute()
-        
-        profile = {}
-        if data.data:
-            profile = data.data[0]
+        profile = data.data[0] if data.data else {}
 
         return {"success": True, "user": user, "profile": profile}
 
     except Exception as e:
-        # رسالة خطأ أوضح
         return {"error": f"فشل الدخول: {str(e)}"}
-
-def logout_user():
-    try:
-        supabase.auth.sign_out()
-    except:
-        pass
-
-def login_with_token(access_token):
-    """
-    تسجيل الدخول باستخدام التوكن المحفوظ في الرابط
-    """
-    try:
-        # التحقق من صحة التوكن عبر سوبابيس
-        res = supabase.auth.get_user(access_token)
-        user = res.user
-        
-        if not user:
-            return {"error": "Invalid Token"}
-
-        # إذا التوكن صحيح، نجلب البروفايل
-        data = supabase.table("profiles").select("*").eq("id", user.id).execute()
-        
-        profile = {}
-        if data.data:
-            profile = data.data[0]
-            
-        return {"success": True, "user": user, "profile": profile}
-        
-    except Exception as e:
-        return {"error": str(e)}
 
 # ==========================================
 # 📂 Project Management Functions

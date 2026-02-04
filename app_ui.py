@@ -274,26 +274,156 @@ st.markdown("""
             border-radius: 15px;
             text-align: center;
         }
+            
+        /* =========================================
+               7. تنسيقات خاصة لتاب التسجيل الفخم
+               ========================================= */
+            /* صندوق الرسالة الخاصة */
+            .exclusive-msg-box {
+                background: rgba(252, 163, 17, 0.08);
+                border-right: 4px solid #fca311;
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 25px;
+            }
+            
+            /* كلاس لجعل حقول المعلومات الثابتة شفافة وذهبية */
+            .static-info-field .stTextInput input:disabled {
+                background-color: transparent !important; /* شفاف */
+                border: none !important; /* بدون حدود */
+                border-bottom: 1px dashed rgba(252, 163, 17, 0.3) !important; /* خط سفلي خفيف */
+                color: #fca311 !important; /* لون ذهبي للنص */
+                font-weight: 600 !important;
+                font-size: 1rem !important;
+                padding-right: 0 !important; /* إلغاء الحشو الجانبي */
+                cursor: default !important; /* الماوس العادي */
+                opacity: 1 !important; /* وضوح كامل */
+            }
+            /* تصغير لون العنوان للحقول الثابتة */
+            .static-info-field label {
+                 color: #888 !important;
+                 font-size: 0.8rem !important;
+            }
+
     </style>
 """, unsafe_allow_html=True)
 
 # =============================================================================
-# 👤 المرحلة الأولى: الملف الشخصي
+# 👤 المرحلة الأولى: الملف الشخصي (واجهة الدخول الفخمة - Luxury Login UI)
 # =============================================================================
 if st.session_state.app_stage == 'profile':
+    
+    # --- 1. حقن ستايل الفخامة (CSS Magic) ---
+    st.markdown("""
+        <style>
+            /* إخفاء السايدبار في هذه الصفحة للتركيز التام */
+            section[data-testid="stSidebar"] {display: none !important;}
+
+            /* حاوية العنوان الرئيسية - نسخة مضغوطة */
+            .luxury-hero-container {
+                text-align: center;
+                padding: 40px 20px 0px 20px; /* 👈 جعلنا الـ bottom صفراً */
+                background: radial-gradient(ellipse at center, rgba(252, 163, 17, 0.15) 0%, rgba(0,0,0,0) 70%);
+                margin-bottom: -30px !important; /* 👈 سحبنا صندوق الدخول للأعلى بقوة */
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+                
+                .mega-title {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 20px;
+                margin-bottom: 0px !important; /* 👈 إلغاء أي فراغ تحت كلمة آيلا */
+            }
+
+            /* موازنة السلوجان للسنترة المطلقة */
+            .slogan-text {
+                color: #aaaaaa;
+                font-size: 1.2rem;
+                letter-spacing: 5px;
+                margin-top: 10px;
+                /* الخدعة هنا: إضافة بادنج يسار لتعويض الفراغ يمين الحرف الأخير */
+                padding-left: 5px; 
+                text-align: center;
+                width: 100%;
+            }
+
+            /* سنترة العنوان في الموبايل */
+            @media (max-width: 768px) {
+                .mega-title { 
+                    flex-direction: column; 
+                    gap: 10px; 
+                    font-size: 2.5rem; /* صغرنا الخط قليلاً للموبايل */
+                    text-align: center;
+                }
+                .mega-title span { width: 100%; }
+            }
+
+            /* تنسيق الجزء الإنجليزي */
+            .mega-title .en {
+                color: #ffffff;
+                text-transform: uppercase;
+                letter-spacing: 2px; /* تباعد أحرف للفخامة */
+            }
+
+            /* تنسيق الفاصل */
+            .mega-title .sep {
+                color: #fca311; /* لون ذهبي */
+                font-weight: 300;
+                opacity: 0.6;
+                font-size: 3.5rem;
+            }
+
+            /* تنسيق الجزء العربي */
+            .mega-title .ar {
+                color: #fca311; /* لون ذهبي مميز للاسم العربي */
+                font-family: 'IBM Plex Sans Arabic', sans-serif;
+            }
+
+            /* الشعار الفرعي (Slogan) - نسخة مضغوطة */
+            .slogan-text {
+                color: #aaaaaa;
+                font-size: 1.2rem;
+                font-weight: 300;
+                letter-spacing: 5px;
+                text-transform: lowercase;
+                margin-top: -15px !important; /* 👈 سحبنا النص للأعلى ليقترب من آيلا */
+                padding-bottom: 0px;
+                opacity: 0.7;
+            }
+            
+            /* تأثيرات إضافية للشاشات الصغيرة */
+            @media (max-width: 768px) {
+                .mega-title { flex-direction: column; gap: 5px; font-size: 3rem; }
+                .mega-title .sep { display: none; } /* إخفاء الفاصل في الموبايل */
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # --- 2. رسم الواجهة (HTML Structure) ---
+    st.markdown("""
+        <div class="luxury-hero-container">
+            <h1 class="mega-title">
+                <span class="en">Ayla Arc</span>
+                <span class="sep">|</span>
+                <span class="ar">المعمارية آيلا</span>
+            </h1>
+            <p class="slogan-text">your architecture soulmate</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # --- 3. منطقة التبويبات (Tabs) - تبقى كما هي في الكود الأصلي ---
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        st.markdown("""
-            <div style='background-color: #1E1E1E; padding: 20px; border-radius: 15px; border: 1px solid #333; text-align: center;'>
-                <h2 style='color: #fca311; margin: 0;'>👤 Ayla Arc Login</h2>
-            </div>
-            <br>
-        """, unsafe_allow_html=True)
+        # مسافة بسيطة قبل التابات
+        st.markdown("<br>", unsafe_allow_html=True)
         
         tab1, tab2 = st.tabs(["تسجيل دخول", "إنشاء حساب جديد"])
         
-        # --- تاب تسجيل الدخول (يعمل بشكل طبيعي) ---
+        # --- تاب تسجيل الدخول ---
         with tab1:
             with st.form("login_form"):
                 email = st.text_input("البريد الإلكتروني:", key="login_email")
@@ -308,7 +438,6 @@ if st.session_state.app_stage == 'profile':
                                 st.success("تم تسجيل الدخول بنجاح!")
                                 st.session_state.user = result["user"]
                                 
-                                # 👇 أضف هذه الأسطر هنا بالضبط
                                 session = db_handler.supabase.auth.get_session()
                                 if session:
                                     st.query_params["auth_token"] = session.access_token
@@ -324,103 +453,220 @@ if st.session_state.app_stage == 'profile':
                     else:
                         st.warning("يرجى إدخال البريد وكلمة المرور.")
 
-        # --- تاب إنشاء الحساب (موجود ولكن مجمد 🔒) ---
+        # --- تاب إنشاء الحساب (النسخة الخاصة بأسراء) ---
         with tab2:
-            st.warning("⛔ التسجيل مغلق حالياً: النظام مخصص للأعضاء المصرح لهم فقط.")
-            
-            # الحقول موجودة لكن لا يمكن الكتابة فيها (disabled=True)
-            new_name = st.text_input("الاسم الحقيقي:", placeholder="غير متاح...", disabled=True)
-            new_nick = st.text_input("اللقب المفضل:", placeholder="غير متاح...", disabled=True)
-            new_email = st.text_input("البريد الإلكتروني:", key="signup_email", placeholder="Registration Closed", disabled=True)
-            new_pass = st.text_input("كلمة المرور:", type="password", key="signup_pass", disabled=True)
-            
-            # الزر أيضاً معطل
-            st.button("إنشاء حساب 🆕", disabled=True, use_container_width=True)
+            # 1. الرسالة المخصصة (بستايل فخم)
+            st.markdown("""
+                <div class="exclusive-msg-box">
+                    <p style='margin:0; color: #e0e0e0; font-size: 0.95rem; line-height: 1.6;'>
+                         <b>ملاحظة من النظام:</b> تم تطويري وبرمجتي خصيصاً للمهندسة <b>إسراء</b>.
+                        <br>إذا حضرتك مو إسراء، نعتذر منك، غير مسموح الدخول لآيلا.
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
+
+            with st.form("signup_form_esraa"):
+                 st.caption("👤 البيانات الشخصية (مثبتة في النظام):")
+                 
+                 # نستخدم حاوية لتطبيق ستايل الحقول الشفافة
+                 with st.container():
+                     st.markdown('<div class="static-info-field">', unsafe_allow_html=True)
+                     col_info1, col_info2 = st.columns(2)
+                     with col_info1:
+                          # الاسم واللقب (قراءة فقط - شفاف)
+                          st.text_input("الاسم:", value="اسراء احمد", disabled=True, key="static_name")
+                          st.text_input("اللقب المفضل:", value="سيرو", disabled=True, key="static_nick")
+                     with col_info2:
+                          # البلد والجامعة (قراءة فقط - شفاف)
+                          st.text_input("البلد:", value="العراق", disabled=True, key="static_country")
+                          st.text_input("الجامعة:", value="جامعة كربلاء", disabled=True, key="static_uni")
+                     
+                     # البريد المشفر (قراءة فقط - شفاف)
+                     st.text_input("البريد الإلكتروني المعتمد:", value="2isr*****med@gmail.com", disabled=True, key="static_email")
+                     st.markdown('</div>', unsafe_allow_html=True)
+
+                 st.markdown("---")
+                 
+                 # 2. حقول الأمان (قابلة للكتابة - بستايل الإدخال العادي)
+                 st.caption("🔒 يرجى إكمال بيانات الأمان لتفعيل الحساب:")
+                 
+                 # حقل رمز التوثيق الجديد
+                 verify_code = st.text_input("رمز التوثيق (Verification Code):", placeholder="أدخلي الرمز السري المزود لكِ...")
+                 
+                 # حقول كلمة المرور
+                 col_pass1, col_pass2 = st.columns(2)
+                 with col_pass1:
+                     new_pass1 = st.text_input("كلمة المرور الجديدة:", type="password", placeholder="••••••••")
+                 with col_pass2:
+                     new_pass2 = st.text_input("تأكيد كلمة المرور:", type="password", placeholder="••••••••")
+
+                 st.markdown("<br>", unsafe_allow_html=True)
+                 # زر التسجيل (مفعل الآن)
+                 submitted_signup = st.form_submit_button("✨ تفعيل الحساب وبدء الرحلة", use_container_width=True)
+
+                 if submitted_signup:
+                      # 1. التحقق من صحة المدخلات
+                      if new_pass1 and new_pass2 and verify_code:
+                           if new_pass1 != new_pass2:
+                               st.warning("⚠️ كلمتا المرور غير متطابقتين.")
+                           
+                           # 2. التحقق من الرمز السري (الحارس)
+                           elif verify_code != "AYLA-X5390-SERO.ENG": # 👈 تأكد أن هذا هو الرمز الذي ستعطيه لها
+                               st.error("⛔ رمز التوثيق غير صحيح. يرجى التأكد من البطاقة المزودة لكِ.")
+                           
+                           else:
+                               # 3. كل شيء صحيح - نبدأ عملية التسجيل الحقيقية
+                               with st.spinner("جاري حفر اسمك في سجلات المعماريين..."):
+                                   
+                                   # 👈 ملاحظة مهمة: هنا نضع الايميل الحقيقي كاملاً لأننا نعرفه مسبقاً
+                                   # هذا الايميل هو الذي سيسجل في سوبابيس
+                                   real_email_for_signup = "2israa0ahmed@gmail.com" 
+                                   
+                                   # استدعاء دالة التسجيل من الهاندلار
+                                   # نمرر المعلومات الثابتة (الاسم واللقب) لأننا نعرفها
+                                   res = db_handler.signup_user(real_email_for_signup, new_pass1, "إسراء أحمد", "سيرو")
+                                   
+                                   if "success" in res:
+                                       # 4. نجاح التسجيل - تسجيل الدخول تلقائياً
+                                       st.session_state.user = res["user"]
+                                       
+                                       # حفظ التوكن في الرابط
+                                       session = db_handler.supabase.auth.get_session()
+                                       if session:
+                                           st.query_params["auth_token"] = session.access_token
+                                       
+                                       # حفظ بيانات البروفايل في الجلسة
+                                       st.session_state.project_data["user_real_name"] = "إسراء أحمد"
+                                       st.session_state.project_data["user_nickname"] = "سيرو"
+                                       
+                                       st.toast("تم تفعيل الحساب بنجاح! 🏛️", icon="✨")
+                                       time.sleep(1.5)
+                                       st.session_state.app_stage = 'project_landing'
+                                       st.rerun()
+                                   else:
+                                       # في حال حدوث خطأ من السيرفر (مثلاً الايميل مسجل مسبقاً)
+                                       st.error(f"حدث خطأ في التسجيل: {res.get('error')}")
+                      else:
+                           st.warning("⚠️ يرجى تعبئة رمز التوثيق وكلمة المرور.")
 
 # =============================================================================
-# 🏛️ المرحلة الثانية: لوحة المشاريع
+# 🏛️ المرحلة الثانية: لوحة المشاريع (المرسم المعماري الفاخر)
 # =============================================================================
 elif st.session_state.app_stage == 'project_landing':
     user = st.session_state.get('user')
     profile = st.session_state.get('project_data', {}) 
 
-    # 👇👇 تعديل هنا: استخدام أعمدة لوضع زر الخروج بجانب الترحيب 👇👇
-    col_header, col_logout = st.columns([4, 1])
-    with col_header:
-        st.markdown(f"""
-            <h1 style='text-align: right; color: #fca311; margin-bottom: 0;'>مرحباً المعمارية {profile.get('user_real_name', 'إسراء')} 👋</h1>
-        """, unsafe_allow_html=True)
-    with col_logout:
-        st.markdown("<br>", unsafe_allow_html=True) # مسافة بسيطة
-        if st.button("🚪 تسجيل خروج", key="landing_logout", type="primary", use_container_width=True):
+    # --- 1. ستايل "المرسم المعماري" (CSS Magic) ---
+    st.markdown("""
+        <style>
+            /* حاوية البطاقة الزجاجية */
+            .project-card {
+                background: rgba(255, 255, 255, 0.03);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(252, 163, 17, 0.15);
+                border-right: 6px solid #fca311; /* العمود الذهبي للهوية */
+                border-radius: 15px;
+                padding: 25px;
+                margin-bottom: 15px;
+                transition: all 0.3s ease;
+            }
+            .project-card:hover {
+                transform: translateX(-8px);
+                background: rgba(252, 163, 17, 0.05);
+                border-color: #fca311;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            }
+            /* تنسيق الأيقونة المتوهجة */
+            .icon-box {
+                font-size: 2.2rem;
+                margin-left: 20px;
+                filter: drop-shadow(0 0 10px rgba(252, 163, 17, 0.4));
+            }
+            .p-name { color: #fca311; font-size: 1.6rem; font-weight: bold; margin:0; }
+            .p-meta { color: #888; font-size: 0.9rem; margin-top: 5px; letter-spacing: 1px; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # الهيدر (الترحيب الملكي)
+    col_h, col_l = st.columns([4, 1.2])
+    with col_h:
+        st.markdown(f"<h1 style='color: #fca311; margin:0;'>أهلاً بكِ في المرسم.. 👋</h1>", unsafe_allow_html=True)
+        st.markdown(f"<p style='color: #ccc; font-size: 1.2rem;'>المعمارية: <b>{profile.get('user_real_name', 'إسراء')}</b></p>", unsafe_allow_html=True)
+    with col_l:
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("🚪 تسجيل الخروج", key="logout_top", type="primary", use_container_width=True):
             st.session_state.clear()
             st.query_params.clear()
             db_handler.logout_user()
             st.rerun()
-            
-    st.markdown("""
-        <p style='text-align: right; color: #888;'>إليك مشاريعك المحفوظة في الأرشيف:</p>
-        <hr style='border-color: #333; margin-top: 0;'>
-    """, unsafe_allow_html=True)
+
+    st.markdown("<hr style='border-color: rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
   
-    with st.spinner("جاري استدعاء المخططات..."):
+    # جلب المشاريع من قاعدة البيانات
+    with st.spinner("جاري جلب المخططات من الأرشيف..."):
         response = db_handler.get_user_projects(user.id)
         
     if "error" in response:
-        st.error(f"حدث خطأ في الاتصال: {response['error']}")
+        st.error(f"حدث خطأ: {response['error']}")
     else:
         projects = response.get("data", [])
         if not projects:
-            st.info("لا توجد مشاريع حتى الآن. ابدأي رحلتك الأولى! 👇")
+            st.info("المرسم فارغ حالياً.. ابدأي مشروعكِ الأول بالأسفل! ✨")
         else:
-            for p in projects:
-                with st.container(border=True):
-                    c1, c2 = st.columns([4, 1])
-                    with c1:
-                        st.subheader(f"📂 {p['name']}")
-                        st.caption(f"Type: {p['project_type']} | Date: {p['created_at'][:10]}")
-                    with c2:
-                        # 1. زر الفتح (موجود سابقاً)
-                        if st.button("فتح 🔓", key=f"open_{p['id']}", use_container_width=True):
-                            st.query_params["pid"] = p['id']
-                            st.session_state.project_data = {
-                                "user_real_name": profile.get('user_real_name'),
-                                "user_nickname": profile.get('user_nickname'),
-                                "id": p['id'],
-                                "name": p['name'],
-                                "type": p['project_type'],
-                                "site": p['site_context'],
-                                "requirements": p['requirements']
-                            }
-                            with st.spinner("استرجاع ذكريات المشروع..."):
-                                history = db_handler.get_project_messages(p['id'])
-                                st.session_state.messages = history
-                                st.session_state.app_stage = 'main_chat'
-                            st.rerun()
-                        
-                        # 👇👇 الإضافة الجديدة: زر الحذف مع تأكيد (Popover) 👇👇
-                        st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True) # مسافة جمالية
-                        
-                        # نستخدم popover كحماية من الضغط الخاطئ
-                        with st.popover("حذف 🗑️", use_container_width=True):
-                            st.caption(f"هل أنت متأكد من حذف مشروع **{p['name']}**؟")
-                            st.caption("⚠️ هذا الإجراء نهائي ولا يمكن التراجع عنه.")
-                            
-                            if st.button("نعم، تأكيد الحذف", key=f"confirm_del_btn_{p['id']}", type="primary", use_container_width=True):
-                                with st.spinner("جاري إزالة المشروع من السجلات..."):
-                                    # استدعاء دالة الحذف النهائي التي برمجناها سابقاً
-                                    del_res = db_handler.delete_project_permanently(p['id'])
-                                    
-                                    if del_res.get("success"):
-                                        st.toast(f"تم حذف مشروع {p['name']} بنجاح.", icon="🗑️")
-                                        time.sleep(0.8) # وقت قصير لظهور التوست
-                                        st.rerun() # تحديث الصفحة لإخفاء المشروع المحذوف
-                                    else:
-                                        st.error(f"فشل الحذف: {del_res.get('error')}")
-                        # 👆👆 انتهت الإضافة 👆👆
+            # --- 2. محرك الرسم الذكي (The Intelligent Loop) ---
+            # قاموس الأيقونات المعمارية حسب النوع
+            type_icons = {
+                "Sakkany (Residential)": "🏠",
+                "Cultural/Public": "🏛️",
+                "Commercial": "🏢", # 👈 ناطحة السحاب التي طلبتها
+                "Landscape": "🌳",
+                "Urban Design": "🏙️"
+            }
 
+            for p in projects:
+                # اختيار الأيقونة بناءً على نوع المشروع القادم من الداتا بيس
+                current_icon = type_icons.get(p['project_type'], "📐")
+                
+                # أ) صب معلومات المشروع داخل قالب الـ HTML الفخم
+                st.markdown(f"""
+                    <div class="project-card">
+                        <div style="display: flex; align-items: center; justify-content: flex-end; direction: rtl;">
+                            <div class="icon-box">{current_icon}</div>
+                            <div style="flex-grow: 1; text-align: right;">
+                                <h3 class="p-name">{p['name']}</h3>
+                                <div class="p-meta">
+                                    <span>TYPE: {p['project_type']}</span> | 
+                                    <span>CREATED: {p['created_at'][:10]}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
+
+                # ب) رسم أزرار التحكم (برمجياً) تحت كل بطاقة
+                c1, c2, _ = st.columns([1.2, 1, 3])
+                with c1:
+                    if st.button(f"فتح المشروع 🔓", key=f"open_{p['id']}", use_container_width=True):
+                        st.query_params["pid"] = p['id']
+                        st.session_state.project_data.update({
+                            "id": p['id'], "name": p['name'], "type": p['project_type'],
+                            "site": p['site_context'], "requirements": p['requirements']
+                        })
+                        st.session_state.messages = db_handler.get_project_messages(p['id'])
+                        st.session_state.app_stage = 'main_chat'
+                        st.rerun()
+                with c2:
+                    with st.popover("حذف 🗑️", use_container_width=True):
+                        st.caption("هل أنتِ متأكدة؟ لا يمكن التراجع.")
+                        if st.button("نعم، حذف نهائي", key=f"del_{p['id']}", type="primary", use_container_width=True):
+                            db_handler.delete_project_permanently(p['id'])
+                            st.rerun()
+                
+                st.markdown("<div style='margin-bottom:20px'></div>", unsafe_allow_html=True)
+
+    # زر إضافة مشروع جديد
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("➕ مشروع جديد (New Project)", use_container_width=True):
+    if st.button("➕ إضافة مشروع جديد للمرسم", use_container_width=True):
         st.session_state.app_stage = 'project_form'
         st.rerun()
 
@@ -434,7 +680,6 @@ elif st.session_state.app_stage == 'project_form':
         if st.button("⬅️ رجوع للقائمة", use_container_width=True):
             st.session_state.app_stage = 'project_landing'
             st.rerun()
-        st.markdown("<br>", unsafe_allow_html=True)
         # 👆👆 انتهت الإضافة 👆👆
 
         st.markdown("<h2 style='text-align: right; color: #fca311;'>📝 بيانات المشروع الجديد</h2>", unsafe_allow_html=True)
