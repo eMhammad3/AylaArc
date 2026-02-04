@@ -1070,69 +1070,101 @@ elif st.session_state.app_stage == 'main_chat':
     """, unsafe_allow_html=True)
 
     # ==================================================
-    # 🕵️‍♂️ منطق الأقفال وعرض الرسائل (The Clean Guard System)
+    # 🕵️‍♂️ منطق الأقفال (The Guard System)
     # ==================================================
     
-    # تحديد آخر رسالة للمستخدم لنعرض الأزرار تحتها فقط (اختياري للترتيب)
-    user_indices = [i for i, m in enumerate(st.session_state.messages) if m['role'] == 'user']
-    last_user_index = user_indices[-1] if user_indices else -1
+    is_active_phase = False
+    is_locked_phase = False
+    is_dev_phase = False
 
-    for i, message in enumerate(st.session_state.messages):
-        role = message["role"]
-        avatar = "👷‍♀️" if role == "user" else "👩‍💼"
-        
-        # --- وضع التعديل (Edit Mode) ---
-        if st.session_state.edit_index == i:
-            with st.container(border=True):
-                st.caption("✏️ تعديل الرسالة:")
-                new_text = st.text_area("نص الرسالة:", value=message["content"], key=f"edit_area_{i}")
-                
-                # أزرار الحفظ والإلغاء جنب بعض
-                c_save, c_cancel = st.columns([1, 1])
-                
-                if c_save.button("✅ حفظ التعديل", key=f"save_{i}", use_container_width=True):
-                    st.session_state.messages[i]["content"] = new_text
-                    # قص الرسائل اللاحقة للحفاظ على سياق الشات
-                    st.session_state.messages = st.session_state.messages[:i+1]
-                    st.session_state.edit_index = None
-                    st.session_state.trigger_generation = True 
-                    st.rerun()
-                
-                if c_cancel.button("❌ إلغاء", key=f"cancel_{i}", use_container_width=True):
-                    st.session_state.edit_index = None
-                    st.rerun()
-
-        # --- وضع العرض العادي (View Mode) ---
+    if selected_phase_key.startswith("0️⃣") or selected_phase_key.startswith("1️⃣"):
+        is_active_phase = True
+    elif selected_phase_key.startswith("2️⃣"):
+        if st.session_state.phase2_unlocked:
+            is_active_phase = True
         else:
-            with st.chat_message(role, avatar=avatar):
-                # عرض الصورة إن وجدت
-                if message.get("image"):
-                    st.image(message["image"], width=300)
-                # عرض النص
-                st.markdown(message["content"])
+            is_locked_phase = True
+    else:
+        is_dev_phase = True
+
+    if is_locked_phase:
+        st.markdown("""
+            <div class='lock-overlay'>
+                <h1 style='font-size: 60px;'>🔒</h1>
+                <h3>عذراً يا معمارية، هذه المرحلة مقفلة!</h3>
+                <p style='color: #888;'>آيلا تعتقد أنك لم تنهي تحليل الموقع (Phase 1) بشكل كامل بعد.<br>
+                الانتقال للفكرة دون تحليل دقيق هو "انتحار تصميمي".</p>
+            </div>
+        """, unsafe_allow_html=True)
+        col_L1, col_L2, col_L3 = st.columns([1, 2, 1])
+        with col_L2:
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("⚠️ أنا أتحمل المسؤولية (دخول مجازفة)", use_container_width=True, type="primary"):
+                st.session_state.phase2_unlocked = True
+                st.toast("تم كسر القفل! آيلا ستراقب قراراتك بدقة...", icon="👀")
+                time.sleep(1.5)
+                st.rerun()
+
+    elif is_dev_phase:
+        st.markdown("""
+            <div class='lock-overlay' style='border-color: #fca311; opacity: 0.7;'>
+                <h1 style='font-size: 60px;'>🚧</h1>
+                <h3>هذه المنطقة قيد الإنشاء</h3>
+                <p>فريق التطوير يعمل حالياً على تجهيز أدوات هذه المرحلة.<br>
+                ستكون متاحة في التحديث القادم.</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    else:
+
+        # --- عرض الرسائل ---
+        user_indices = [i for i, m in enumerate(st.session_state.messages) if m['role'] == 'user']
+        last_user_index = user_indices[-1] if user_indices else -1
+
+        for i, message in enumerate(st.session_state.messages):
+            role = message["role"]
+            avatar = "👷‍♀️" if role == "user" else "👩‍💼"
             
-            # عرض أزرار التحكم (فقط لرسائل المستخدم)
-            if role == "user":
-                # تنسيق الأزرار بشكل أفقي ومرتب (Ratib Layout)
-                # نستخدم أعمدة صغيرة جداً للأزرار عشان ما تاخذ مساحة
-                col_del, col_edit, col_space = st.columns([0.08, 0.08, 0.84])
-                
-                with col_del:
-                    # زر الحذف (السلة)
-                    if st.button("🗑️", key=f"trash_{i}", help="حذف هذه الرسالة وما بعدها"):
-                        msg_to_del = st.session_state.messages[i]
-                        # الحذف من قاعدة البيانات
-                        if "db_id" in msg_to_del:
-                            db_handler.delete_message(msg_to_del["db_id"])
-                        # الحذف من الشاشة (قص القائمة)
-                        st.session_state.messages = st.session_state.messages[:i]
+            if st.session_state.edit_index == i:
+                with st.container(border=True):
+                    st.caption("📝 تعديل الرسالة:")
+                    new_text = st.text_area("نص الرسالة:", value=message["content"], key=f"edit_area_{i}")
+                    c1, c2 = st.columns([1, 1])
+                    if c1.button("✅ حفظ", key=f"save_{i}"):
+                        st.session_state.messages[i]["content"] = new_text
+                        st.session_state.messages = st.session_state.messages[:i+1]
+                        st.session_state.edit_index = None
+                        st.session_state.trigger_generation = True 
                         st.rerun()
-                
-                with col_edit:
-                    # زر التعديل (القلم) - يظهر فقط لآخر رسالة (اختياري، هنا خليته للكل)
-                    if st.button("✏️", key=f"edit_btn_{i}", help="تعديل الرسالة"):
-                        st.session_state.edit_index = i
+                    if c2.button("❌ إلغاء", key=f"cancel_{i}"):
+                        st.session_state.edit_index = None
                         st.rerun()
+            else:
+                with st.chat_message(role, avatar=avatar):
+                    if role == "user": st.markdown('<div class="user-marker"></div>', unsafe_allow_html=True)
+                    else: st.markdown('<div class="assistant-marker"></div>', unsafe_allow_html=True)
+                    
+                    if message.get("image"):
+                        st.image(message["image"], width=300)
+                    st.markdown(message["content"])
+                
+                if role == "user" and i == last_user_index:
+                    c1, c2, c3 = st.columns([0.05, 0.05, 0.9])
+                    with c1:
+                        st.markdown('<div class="tiny-btn">', unsafe_allow_html=True)
+                        if st.button("❌", key=f"del_{i}"):
+                            msg_to_del = st.session_state.messages[i]
+                            if "db_id" in msg_to_del:
+                                db_handler.delete_message(msg_to_del["db_id"])
+                            st.session_state.messages = st.session_state.messages[:i]
+                            st.rerun()
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    with c2:
+                        st.markdown('<div class="tiny-btn">', unsafe_allow_html=True)
+                        if st.button("✏️", key=f"edit_btn_{i}"):
+                            st.session_state.edit_index = i
+                            st.rerun()
+                        st.markdown('</div>', unsafe_allow_html=True)
 
         # --- منطقة الإدخال ---
         with st.popover("📎", use_container_width=False):
@@ -1232,4 +1264,3 @@ elif st.session_state.app_stage == 'main_chat':
             st.session_state.trigger_generation = False
 
             st.rerun()
-
