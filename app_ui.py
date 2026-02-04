@@ -828,8 +828,12 @@ elif st.session_state.app_stage == 'project_landing':
             
             # 1. عرض بوابة المشروع الملكية (The Royal Gateway) 🏛️✨
             project_icon = ""
-            if "Residential" in p['project_type']: project_icon = "🏡"
-            elif "Commercial" in p['project_type']: project_icon = "🏢"
+            # نضمن إن السستم ما يوكع إذا كان النوع فارغ
+            p_type_check = p.get('project_type') or ""
+            project_icon = "🏛️" # أيقونة افتراضية
+            if "Residential" in p_type_check: project_icon = "🏡"
+            elif "Commercial" in p_type_check: project_icon = "🏢"
+            elif "Educational" in p_type_check: project_icon = "🏫"
             
             # ملاحظة: تم تنظيف الكود من أي رموز قد تسبب تداخل (Escaping)
             html_content = f"""
@@ -964,19 +968,16 @@ elif st.session_state.app_stage == 'project_form':
                         current_nickname = st.session_state.project_data.get('user_nickname')
 
                         # نحدث البيانات كاملة من اللي رجع من الداتابيس حتى ما ننسى شي
+                        # 1. شحن البيانات كاملة
                         st.session_state.project_data = new_project
                         st.session_state.project_data["user_real_name"] = current_real_name
                         st.session_state.project_data["user_nickname"] = current_nickname
                         
-                        # سطر ذهبي: نثبت رقم المشروع بالرابط حتى لو صار ريلود ما يضيع
+                        # 2. تثبيت المعرف في الرابط
                         st.query_params["pid"] = new_project['id']
                         
-                        time.sleep(1)
-                        st.session_state.app_stage = 'project_dashboard'
-                        st.rerun()
-                        
-                        time.sleep(1)
-                        st.session_state.app_stage = 'project_dashboard'
+                        # 3. توجيه آيلا لغرفة الشات (لأن الـ dashboard ممسوح من الكود عندك)
+                        st.session_state.app_stage = 'main_chat' 
                         st.rerun()
                     else:
                         st.error(f"فشل الحفظ: {result.get('error')}")
@@ -1313,6 +1314,7 @@ elif st.session_state.app_stage == 'main_chat':
             st.session_state.trigger_generation = False
 
             st.rerun()
+
 
 
 
