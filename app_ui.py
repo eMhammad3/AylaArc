@@ -502,6 +502,11 @@ st.markdown("""
             background: linear-gradient(90deg, rgba(252, 163, 17, 0.2) 0%, rgba(0,0,0,0) 100%) !important;
             box-shadow: -10px 0 20px rgba(252, 163, 17, 0.1) !important;
         }
+
+        /* إخفاء جملة Press Enter المزعجة */
+        .stChatInput div[data-testid="InputInstructions"] {
+            display: none !important;
+        }
             
     </style>
 """, unsafe_allow_html=True)
@@ -669,18 +674,38 @@ if st.session_state.app_stage == 'profile':
                  # نستخدم حاوية لتطبيق ستايل الحقول الشفافة
                  with st.container():
                      st.markdown('<div class="static-info-field">', unsafe_allow_html=True)
-                     col_info1, col_info2 = st.columns(2)
-                     with col_info1:
-                          # الاسم واللقب (قراءة فقط - شفاف)
-                          st.text_input("الاسم:", value="اسراء احمد", disabled=True, key="static_name")
-                          st.text_input("اللقب المفضل:", value="سيرو", disabled=True, key="static_nick")
-                     with col_info2:
-                          # البلد والجامعة (قراءة فقط - شفاف)
-                          st.text_input("البلد:", value="العراق", disabled=True, key="static_country")
-                          st.text_input("الجامعة:", value="جامعة كربلاء", disabled=True, key="static_uni")
                      
-                     # البريد المشفر (قراءة فقط - شفاف)
+                     # الصف الأول: الاسم والبلد
+                     row1_col1, row1_col2 = st.columns(2)
+                     with row1_col1:
+                          st.text_input("الاسم:", value="اسراء احمد", disabled=True, key="static_name")
+                     with row1_col2:
+                          st.text_input("البلد:", value="العراق", disabled=True, key="static_country")
+
+                     # الصف الثاني: اللقب والجامعة
+                     row2_col1, row2_col2 = st.columns(2)
+                     with row2_col1:
+                          st.text_input("اللقب المفضل:", value="سيرو", disabled=True, key="static_nick")
+                     with row2_col2:
+                          st.text_input("الجامعة:", value="جامعة كربلاء", disabled=True, key="static_uni")
+
+                     # الصف الثالث: المرحلة والمادة
+                     row3_col1, row3_col2 = st.columns(2)
+                     with row3_col1:
+                          st.text_input("المرحلة:", value="الثانية", disabled=True, key="static_stage")
+                     with row3_col2:
+                          st.text_input("المادة:", value="دزاين - Design", disabled=True, key="static_subject")
+
+                     # الصف الرابع: المنافسين والدكتور
+                     row4_col1, row4_col2 = st.columns(2)
+                     with row4_col1:
+                          st.text_input("عدد المنافسين مع رفع ملفاتهم:", value="45", disabled=True, key="static_competitors")
+                     with row4_col2:
+                          st.text_input("اسم دكتور المادة (رئيس لجنة ال Jury) :", value="د. أنور", disabled=True, key="static_jury")
+                     
+                     # الصف الأخير: البريد (يأخذ العرض كاملاً للتميز)
                      st.text_input("البريد الإلكتروني المعتمد:", value="2isr*****med@gmail.com", disabled=True, key="static_email")
+                     
                      st.markdown('</div>', unsafe_allow_html=True)
 
                  st.markdown("---")
@@ -897,11 +922,19 @@ elif st.session_state.app_stage == 'project_form':
         # 👆👆 انتهت الإضافة 👆👆
 
         st.markdown("<h2 style='text-align: right; color: #fca311;'>📝 بيانات المشروع الجديد</h2>", unsafe_allow_html=True)
-        st.caption("هذه البيانات سيتم حقنها في عقل النموذج.")
+        st.caption("")
         with st.form("project_setup_form"):
             p_name = st.text_input("اسم المشروع:", placeholder="مثال: مركز ثقافي...")
-            p_type = st.selectbox("نوع المشروع:", ["Sakkany (Residential)", "Cultural/Public", "Commercial", "Landscape", "Urban Design"])
+            p_type = st.selectbox("نوع المشروع:", ["سكنى (Residential)", "ثقافي / عام (Cultural/Public)", "تجاري (Commercial)", "لاندسكيب (Landscape)", "تصميم حضري (Urban Design)", "مباني تعليمية (Educational)", "أخرى..."])
+            selected_type = st.selectbox("نوع المشروع:", project_types)
+            
+            # إذا اختار "أخرى"، يظهر حقل كتابة
+            if selected_type == "أخرى (كتابة يدوية)...":
+                p_type = st.text_input("اكتبي نوع المشروع هنا:", placeholder="مثال: مستشفى، فندق...")
+            else:
+                p_type = selected_type
             p_site = st.text_area("تفاصيل الموقع (Site Context):")
+            p_area = st.text_input("مساحة الأرض (متر مربع):", placeholder="مثال: 400 م2")
             p_req = st.text_area("أهم المتطلبات (Program):")
             submitted = st.form_submit_button("🚀 حفظ وبدء الرحلة")
             if submitted:
@@ -1264,3 +1297,4 @@ elif st.session_state.app_stage == 'main_chat':
             st.session_state.trigger_generation = False
 
             st.rerun()
+
