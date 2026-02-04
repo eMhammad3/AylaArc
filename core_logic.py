@@ -274,6 +274,7 @@ def get_system_prompt(phase, project_data=None, history_len=0, is_risk_mode=Fals
         - Project Name: {project_data.get('name', 'Unknown')}
         - Project Type: {project_data.get('type', 'Unknown')}
         - Site Location/Context: {project_data.get('site', 'Unknown')}
+        - Site Area: {project_data.get('site_area', 'Unknown')} # 👈 الآن آيلا ستراها!
         - Key Requirements (The Program): {project_data.get('requirements', 'Unknown')}
         
         INSTRUCTION: Any advice you give MUST be tailored to this specific project context.
