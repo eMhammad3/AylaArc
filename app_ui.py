@@ -963,16 +963,18 @@ elif st.session_state.app_stage == 'project_form':
                         current_real_name = st.session_state.project_data.get('user_real_name')
                         current_nickname = st.session_state.project_data.get('user_nickname')
 
-                        st.session_state.project_data = {
-                            "user_real_name": current_real_name,
-                            "user_nickname": current_nickname,
-                            "id": new_project['id'],
-                            "name": new_project['name'],
-                            "type": new_project['project_type'],
-                            "site": new_project['site_context'],
-                            "site_area": new_project.get('site_area', 'غير محددة'), # 👈 السطر الجديد
-                            "requirements": new_project['requirements']
-                        }
+                        # نحدث البيانات كاملة من اللي رجع من الداتابيس حتى ما ننسى شي
+                        st.session_state.project_data = new_project
+                        st.session_state.project_data["user_real_name"] = current_real_name
+                        st.session_state.project_data["user_nickname"] = current_nickname
+                        
+                        # سطر ذهبي: نثبت رقم المشروع بالرابط حتى لو صار ريلود ما يضيع
+                        st.query_params["pid"] = new_project['id']
+                        
+                        time.sleep(1)
+                        st.session_state.app_stage = 'project_dashboard'
+                        st.rerun()
+                        
                         time.sleep(1)
                         st.session_state.app_stage = 'project_dashboard'
                         st.rerun()
@@ -1311,6 +1313,7 @@ elif st.session_state.app_stage == 'main_chat':
             st.session_state.trigger_generation = False
 
             st.rerun()
+
 
 
 
