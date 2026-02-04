@@ -866,7 +866,7 @@ elif st.session_state.app_stage == 'project_landing':
                     st.session_state.project_data.update(p)
                     st.session_state.project_data["user_real_name"] = profile.get('user_real_name')
                     st.session_state.project_data["user_nickname"] = profile.get('user_nickname')
-                    })
+                    
                     st.session_state.messages = db_handler.get_project_messages(p['id'])
                     st.session_state.app_stage = 'main_chat'
                     st.rerun()
@@ -1315,6 +1315,7 @@ elif st.session_state.app_stage == 'main_chat':
             st.session_state.trigger_generation = False
 
             st.rerun()
+
 
 
 
