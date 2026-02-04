@@ -128,7 +128,7 @@ def logout_user():
 # 📂 Project Management Functions
 # ==========================================
 
-def create_project(user_id, name, p_type, site, reqs):
+def create_project(user_id, name, p_type, site, reqs, area):
     try:
         response = supabase.table("projects").insert({
             "user_id": user_id,
@@ -136,6 +136,7 @@ def create_project(user_id, name, p_type, site, reqs):
             "project_type": p_type,
             "site_context": site,
             "requirements": reqs,
+            "site_area": area,
             "current_phase": "Phase 1",
             "unlocked_phase": 1,
             "phase_tasks": [] # قائمة فارغة كبداية
