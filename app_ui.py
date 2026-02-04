@@ -827,7 +827,7 @@ elif st.session_state.app_stage == 'project_landing':
             p = projects[0] 
             
             # 1. عرض بوابة المشروع الملكية (The Royal Gateway) 🏛️✨
-            project_icon = "🏛️"
+            project_icon = ""
             if "Residential" in p['project_type']: project_icon = "🏡"
             elif "Commercial" in p['project_type']: project_icon = "🏢"
             
@@ -985,7 +985,7 @@ elif st.session_state.app_stage == 'project_form':
 elif st.session_state.app_stage == 'main_chat':
 
     with st.sidebar:
-        st.title("🏛️ AylaArc")
+        st.title("👩‍💼 AylaArc")
         st.caption("Your Architectural Companion Soulmate")
         
         # --- 1. زر الرجوع للقائمة الرئيسية ---
@@ -1034,7 +1034,7 @@ elif st.session_state.app_stage == 'main_chat':
         st.markdown("---")
         
         # --- 2. زر محادثة جديدة (النسخة الآمنة مع الأرشيف) 🛡️ ---
-        if st.button("✨ محادثة جديدة (أرشفة + تخفيف)", help="يحفظ المحادثة الحالية في الأرشيف، يلخصها للذاكرة، ثم يفرغ الشات.", use_container_width=True):
+        if st.button("✨ محادثة جديدة (ارشفة الحالية)", help="يحفظ المحادثة الحالية في الأرشيف، يلخصها للذاكرة، ثم يفرغ الشات.", use_container_width=True):
             
             if len(st.session_state.messages) > 0:
                 with st.spinner("جاري الأرشفة وتنظيف المكتب..."):
@@ -1083,8 +1083,8 @@ elif st.session_state.app_stage == 'main_chat':
         st.markdown("---")
         
         # --- 4. منطقة الخطر ---
-        with st.expander("🗑️ منطقة الخطر"):
-            st.warning("حذف المشروع نهائياً")
+        with st.expander("حذف المشروع"):
+            st.warning("لا يمكن التراجع!")
             if st.button("تأكيد الحذف", type="primary", use_container_width=True):
                 pid = st.session_state.project_data['id']
                 db_handler.delete_project_permanently(pid)
@@ -1110,7 +1110,7 @@ elif st.session_state.app_stage == 'main_chat':
                 </p>
             </div>
             <div style="text-align: left; opacity: 0.5;">
-                <span style="font-size: 0.8rem; color: #fca311;">AYLA ARC SYSTEM v2.0</span>
+                <span style="font-size: 0.8rem; color: #fca311;">AYLA ARC SYSTEM v2.5</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -1310,5 +1310,6 @@ elif st.session_state.app_stage == 'main_chat':
             st.session_state.trigger_generation = False
 
             st.rerun()
+
 
 
