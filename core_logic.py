@@ -555,7 +555,7 @@ def generate_summary(chat_history, old_summary=""):
 
     try:
         response = or_client.chat.completions.create(
-            model="google/gemini-2.0-flash-001", # نستخدم موديل سريع ورخيص
+            model="google/gemini-3-pro-preview", # نستخدم موديل سريع ورخيص
             messages=[{"role": "user", "content": summary_prompt}],
             temperature=0.3 # حرارة منخفضة للدقة
         )
