@@ -1127,7 +1127,7 @@ elif st.session_state.app_stage == 'main_chat':
             
             if st.session_state.edit_index == i:
                 with st.container(border=True):
-                    st.caption("✏️ تعديل الرسالة:")
+                    st.caption("📝 تعديل الرسالة:")
                     new_text = st.text_area("نص الرسالة:", value=message["content"], key=f"edit_area_{i}")
                     c1, c2 = st.columns([1, 1])
                     if c1.button("✅ حفظ", key=f"save_{i}"):
@@ -1152,7 +1152,7 @@ elif st.session_state.app_stage == 'main_chat':
                     c1, c2, c3 = st.columns([0.05, 0.05, 0.9])
                     with c1:
                         st.markdown('<div class="tiny-btn">', unsafe_allow_html=True)
-                        if st.button("🗑️", key=f"del_{i}"):
+                        if st.button("❌", key=f"del_{i}"):
                             msg_to_del = st.session_state.messages[i]
                             if "db_id" in msg_to_del:
                                 db_handler.delete_message(msg_to_del["db_id"])
@@ -1262,4 +1262,5 @@ elif st.session_state.app_stage == 'main_chat':
             
             # إنهاء التوليد وإعادة التشغيل
             st.session_state.trigger_generation = False
+
             st.rerun()
