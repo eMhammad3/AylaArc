@@ -862,9 +862,10 @@ elif st.session_state.app_stage == 'project_landing':
             with c_open:
                 if st.button("دخول المرسم المعماري 🔓", use_container_width=True, type="primary"):
                     st.query_params["pid"] = p['id']
-                    st.session_state.project_data.update({
-                        "id": p['id'], "name": p['name'], "type": p['project_type'],
-                        "site": p['site_context'], "requirements": p['requirements']
+                    # نحدث الذاكرة بكل محتويات المشروع p اللي جلبناه من الداتابيس
+                    st.session_state.project_data.update(p)
+                    st.session_state.project_data["user_real_name"] = profile.get('user_real_name')
+                    st.session_state.project_data["user_nickname"] = profile.get('user_nickname')
                     })
                     st.session_state.messages = db_handler.get_project_messages(p['id'])
                     st.session_state.app_stage = 'main_chat'
@@ -1314,6 +1315,7 @@ elif st.session_state.app_stage == 'main_chat':
             st.session_state.trigger_generation = False
 
             st.rerun()
+
 
 
 
