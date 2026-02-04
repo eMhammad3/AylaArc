@@ -34,7 +34,7 @@ CURRENT_PROVIDER = "openrouter"
 # 2. اختر الموديل:
 # للمجاني (الفحص): 'meta-llama/llama-3.3-70b-instruct:free'
 # للمدفوع (الإنتاج): 'google/gemini-2.0-flash-001'
-CURRENT_MODEL_NAME = 'arcee-ai/trinity-large-preview:free'
+CURRENT_MODEL_NAME = 'google/gemini-3-flash-preview'
 
 # إعدادات التوليد
 GENERATION_CONFIG = {
