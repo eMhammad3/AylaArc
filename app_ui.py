@@ -85,19 +85,20 @@ if 'edit_index' not in st.session_state:
 # متغير لتخزين حالة فتح القفل للمرحلة الثانية
 if 'phase2_unlocked' not in st.session_state:
     st.session_state.phase2_unlocked = False
+if 'active_phase_idx' not in st.session_state:
+    st.session_state.active_phase_idx = 0
 
-# تعريف المراحل (تم تحديث الأسماء لتعكس الحالة)
+# تعريف المراحل (نسخة مختصرة وأنيقة للواجهة)
 phases = {
-    "0️⃣ محادثة عامة (General Chat)": "0️⃣ General Chat & Setup",
-    "1️⃣ تحليل الموقع (Site Analysis)": "1️⃣ Site & Research (Active)",
-    "2️⃣ الفكرة والتوزيع (Concept & Zoning) 🔒": "2️⃣ Concept & Zoning",
-    # 👇👇 هنا التغيير: إضافة (قيد التطوير) للنص الظاهر 👇👇
-    "3️⃣ السكيتشات (Sketches) 🚧 (قيد التطوير)": "3️⃣ Sketches & Freehand (Locked)",
-    "4️⃣ المخططات (2D Plans) 🚧 (قيد التطوير)": "4️⃣ 2D Drafting / Plans (Locked)",
-    "5️⃣ المودل (3D Modeling) 🚧 (قيد التطوير)": "5️⃣ 3D Modeling (Locked)",
-    "6️⃣ الإظهار المعماري (Visualization) 🚧 (قيد التطوير)": "6️⃣ Visualization (Locked)",
-    "7️⃣ الماكيت (Physical Model) 🚧 (قيد التطوير)": "7️⃣ Physical Model (Locked)",
-    "8️⃣ التحكيم والتسليم (Jury & Submission) 🚧 (قيد التطوير)": "8️⃣ Jury & Marketing (Locked)"
+    "0️⃣ المحادثة والإعداد": "0️⃣ General Chat & Setup",
+    "1️⃣ تحليل الموقع": "1️⃣ Site & Research (Active)",
+    "2️⃣ الفكرة والتوزيع": "2️⃣ Concept & Zoning",
+    "3️⃣ السكيتشات": "3️⃣ Sketches & Freehand (Locked)",
+    "4️⃣ المخططات (2D)": "4️⃣ 2D Drafting / Plans (Locked)",
+    "5️⃣ المودل (3D)": "5️⃣ 3D Modeling (Locked)",
+    "6️⃣ الإظهار المعماري": "6️⃣ Visualization (Locked)",
+    "7️⃣ الماكيت (Physical)": "7️⃣ Physical Model (Locked)",
+    "8️⃣ التحكيم والتسليم": "8️⃣ Jury & Marketing (Locked)"
 }
 
 # 3. الستايل (CSS) - النسخة الذهبية (Clean Cut) ✨
@@ -258,14 +259,30 @@ st.markdown("""
         .stTextInput input:focus, .stTextArea textarea:focus {
             border-color: #fca311 !important;
         }
-        .stButton button {
-            border-radius: 8px;
-            font-weight: 600;
-            transition: 0.3s;
+        /* الأزرار الأساسية (ابدأي مشروعك / دخول المرسم) */
+        div.stButton > button[kind="primary"] {
+            background-color: #fca311 !important; /* ذهبي خالص */
+            color: #000000 !important;           /* نص أسود فخم */
+            border: none !important;
+            border-radius: 12px !important;
+            font-weight: 700 !important;
+            box-shadow: 0 4px 15px rgba(252, 163, 17, 0.3) !important;
         }
-        .stButton button:hover {
-            border-color: #fca311;
-            color: #fca311;
+        div.stButton > button[kind="primary"]:hover {
+            background-color: #ffb742 !important; /* تفتيح عند اللمس */
+            transform: translateY(-2px) !important;
+        }
+
+        /* أزرار تسجيل الخروج (إطار ذهبي فقط) */
+        div.stButton > button[kind="secondary"] {
+            background-color: transparent !important;
+            color: #fca311 !important;
+            border: 1px solid rgba(252, 163, 17, 0.5) !important;
+            border-radius: 10px !important;
+        }
+        div.stButton > button[kind="secondary"]:hover {
+            border-color: #fca311 !important;
+            background-color: rgba(252, 163, 17, 0.05) !important;
         }
         .lock-overlay {
             background: rgba(0,0,0,0.5);
@@ -305,6 +322,157 @@ st.markdown("""
                  font-size: 0.8rem !important;
             }
 
+            /* =========================================
+           8. بوابة المشروع الملكية (The Royal Gateway)
+           ========================================= */
+        .royal-project-gateway {
+            position: relative;
+            margin-top: 60px;
+            padding: 60px 40px;
+            text-align: center;
+            /* خلفية متدرجة ذهبية داكنة مع شفافية */
+            background: linear-gradient(135deg, rgba(252, 163, 17, 0.15) 0%, rgba(0,0,0,0.5) 100%);
+            backdrop-filter: blur(25px); /* تمويه زجاجي قوي */
+            border: 2px solid rgba(252, 163, 17, 0.5); /* إطار ذهبي لامع */
+            border-radius: 30px;
+            /* ظل عميق يعطي إحساساً بالطفو */
+            box-shadow: 0 30px 70px rgba(0,0,0,0.6), inset 0 0 40px rgba(252, 163, 17, 0.1);
+            overflow: hidden;
+            /* أنيميشن دخول فخم */
+            animation: gatewayEntrance 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes gatewayEntrance {
+            from { opacity: 0; transform: translateY(40px) scale(0.92); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .gateway-content { position: relative; z-index: 2; }
+
+        .royal-icon {
+            font-size: 8rem; /* أيقونة عملاقة */
+            margin-bottom: 30px;
+            color: #fca311;
+            /* توهج ذهبي نابض */
+            text-shadow: 0 0 40px rgba(252, 163, 17, 0.7), 0 0 20px rgba(252, 163, 17, 0.9);
+            animation: pulseGold 4s infinite alternate ease-in-out;
+        }
+
+        @keyframes pulseGold {
+            from { text-shadow: 0 0 40px rgba(252, 163, 17, 0.7), 0 0 20px rgba(252, 163, 17, 0.9); transform: scale(1); }
+            to { text-shadow: 0 0 70px rgba(252, 163, 17, 0.9), 0 0 35px rgba(252, 163, 17, 1); transform: scale(1.05); }
+        }
+
+        .royal-title {
+            color: #ffffff;
+            font-size: 3.8rem;
+            font-weight: 800;
+            margin: 0;
+            /* تدرج لوني للنص نفسه */
+            background: linear-gradient(to right, #fca311, #ffd700, #fca311);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.5));
+        }
+
+        .royal-meta {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 35px;
+            font-size: 1.2rem;
+        }
+
+        .meta-item {
+            background: rgba(252, 163, 17, 0.15);
+            padding: 8px 20px;
+            border-radius: 25px;
+            border: 1px solid rgba(252, 163, 17, 0.3);
+            color: #e0e0e0;
+            font-weight: 500;
+        }
+
+        .golden-sep { color: #fca311; font-size: 1.8rem; opacity: 0.8; }
+
+        /* زخارف الزوايا الذهبية */
+        .corner {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #fca311;
+            z-index: 1;
+            opacity: 0.7;
+            box-shadow: 0 0 10px rgba(252, 163, 17, 0.4);
+        }
+        .top-left { top: 15px; left: 15px; border-bottom: none; border-right: none; border-top-left-radius: 10px; }
+        .top-right { top: 15px; right: 15px; border-bottom: none; border-left: none; border-top-right-radius: 10px; }
+        .bottom-left { bottom: 15px; left: 15px; border-top: none; border-right: none; border-bottom-left-radius: 10px; }
+        .bottom-right { bottom: 15px; right: 15px; border-top: none; border-left: none; border-bottom-right-radius: 10px; }
+            
+            /* =========================================
+           9. واجهة الأستوديو (Main Chat Studio)
+           ========================================= */
+        /* الهيدر العلوي للمشروع */
+        .studio-header-bar {
+            background: linear-gradient(90deg, rgba(252, 163, 17, 0.1) 0%, rgba(0,0,0,0) 100%);
+            border-right: 5px solid #fca311;
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .studio-title {
+            font-size: 2.2rem !important;
+            font-weight: 800 !important;
+            color: #ffffff;
+            margin: 0 !important;
+            text-shadow: 0 0 15px rgba(252, 163, 17, 0.3);
+        }
+
+        /* حاوية المدخلات (Floating Input) */
+        .stChatInputContainer {
+            border-top: 1px solid rgba(252, 163, 17, 0.2) !important;
+            background: rgba(10, 10, 10, 0.8) !important;
+            backdrop-filter: blur(10px) !important;
+            padding-bottom: 20px !important;
+        }
+            
+        /* =========================================
+           10. فهرس المخططات (ضبط الاحتواء والخط)
+           ========================================= */
+        div[data-testid="stSidebar"] button {
+            height: auto !important;
+            padding: 10px 12px !important;
+            border-radius: 0px 10px 10px 0px !important;
+            border: none !important;
+            border-right: 4px solid #222 !important;
+            background-color: rgba(255, 255, 255, 0.02) !important;
+            margin-bottom: 6px !important;
+            
+            /* منع النص من الخروج أو التكسر */
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important; /* يضع ثلاث نقاط إذا كان النص طويلاً جداً */
+            font-size: 0.85rem !important; /* تصغير الخط ليتناسب مع العرض */
+            display: flex !important;
+            justify-content: flex-start !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+
+        /* المرحلة النشطة */
+        div[data-testid="stSidebar"] button[kind="primary"] {
+            border-right: 5px solid #fca311 !important;
+            background: linear-gradient(90deg, rgba(252, 163, 17, 0.15) 0%, rgba(0,0,0,0) 100%) !important;
+            color: #fca311 !important;
+            font-weight: bold !important;
+        }
+            
     </style>
 """, unsafe_allow_html=True)
 
@@ -428,7 +596,7 @@ if st.session_state.app_stage == 'profile':
             with st.form("login_form"):
                 email = st.text_input("البريد الإلكتروني:", key="login_email")
                 password = st.text_input("كلمة المرور:", type="password", key="login_pass")
-                submitted = st.form_submit_button("تسجيل الدخول 🔐", use_container_width=True)
+                submitted = st.form_submit_button("تسجيل الدخول", use_container_width=True)
                 
                 if submitted:
                     if email and password:
@@ -587,14 +755,21 @@ elif st.session_state.app_stage == 'project_landing':
         </style>
     """, unsafe_allow_html=True)
 
-    # الهيدر (الترحيب الملكي)
+    # الهيدر (نسخة النص الثابت الفخم) 🏛️✨
     col_h, col_l = st.columns([4, 1.2])
     with col_h:
-        st.markdown(f"<h1 style='color: #fca311; margin:0;'>أهلاً بكِ في المرسم.. 👋</h1>", unsafe_allow_html=True)
-        st.markdown(f"<p style='color: #ccc; font-size: 1.2rem;'>المعمارية: <b>{profile.get('user_real_name', 'إسراء')}</b></p>", unsafe_allow_html=True)
+        # العنوان الرئيسي الثابت
+        st.markdown("<h1 style='color: #fca311; margin:0;'>أنرتِ مرسمكِ الرقمي.. ✨</h1>", unsafe_allow_html=True)
+        
+        # النص الذي طلبته بالضبط (Fixed)
+        st.markdown("""
+            <p style='color: #ccc; font-size: 1.2rem;'>
+                المعمارية اسراء | <span style='color: #fca311; font-weight: bold;'>مترقبة تحديثات مشروعكِ الحالي.</span>
+            </p>
+        """, unsafe_allow_html=True)
     with col_l:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🚪 تسجيل الخروج", key="logout_top", type="primary", use_container_width=True):
+        if st.button("تسجيل الخروج", key="logout_top", type="primary", use_container_width=True):
             st.session_state.clear()
             st.query_params.clear()
             db_handler.logout_user()
@@ -606,69 +781,78 @@ elif st.session_state.app_stage == 'project_landing':
     with st.spinner("جاري جلب المخططات من الأرشيف..."):
         response = db_handler.get_user_projects(user.id)
         
+    # --- بداية نظام المشروع الواحد (The Single Workspace) ---
     if "error" in response:
-        st.error(f"حدث خطأ: {response['error']}")
+        st.error(f"حدث خطأ في جلب البيانات: {response['error']}")
     else:
         projects = response.get("data", [])
-        if not projects:
-            st.info("المرسم فارغ حالياً.. ابدأي مشروعكِ الأول بالأسفل! ✨")
-        else:
-            # --- 2. محرك الرسم الذكي (The Intelligent Loop) ---
-            # قاموس الأيقونات المعمارية حسب النوع
-            type_icons = {
-                "Sakkany (Residential)": "🏠",
-                "Cultural/Public": "🏛️",
-                "Commercial": "🏢", # 👈 ناطحة السحاب التي طلبتها
-                "Landscape": "🌳",
-                "Urban Design": "🏙️"
-            }
-
-            for p in projects:
-                # اختيار الأيقونة بناءً على نوع المشروع القادم من الداتا بيس
-                current_icon = type_icons.get(p['project_type'], "📐")
-                
-                # أ) صب معلومات المشروع داخل قالب الـ HTML الفخم
-                st.markdown(f"""
-                    <div class="project-card">
-                        <div style="display: flex; align-items: center; justify-content: flex-end; direction: rtl;">
-                            <div class="icon-box">{current_icon}</div>
-                            <div style="flex-grow: 1; text-align: right;">
-                                <h3 class="p-name">{p['name']}</h3>
-                                <div class="p-meta">
-                                    <span>TYPE: {p['project_type']}</span> | 
-                                    <span>CREATED: {p['created_at'][:10]}</span>
-                                </div>
-                            </div>
+        
+        if projects:
+            # نأخذ المشروع الوحيد الموجود
+            p = projects[0] 
+            
+            # 1. عرض بوابة المشروع الملكية (The Royal Gateway) 🏛️✨
+            project_icon = "🏛️"
+            if "Residential" in p['project_type']: project_icon = "🏡"
+            elif "Commercial" in p['project_type']: project_icon = "🏢"
+            
+            # ملاحظة: تم تنظيف الكود من أي رموز قد تسبب تداخل (Escaping)
+            html_content = f"""
+                <div class="royal-project-gateway">
+                    <div class="gateway-content">
+                        <div class="royal-icon">{project_icon}</div>
+                        <h1 class="royal-title">{p['name']}</h1>
+                        <div class="royal-meta">
+                            <span class="meta-item">📌 {p['project_type']}</span>
+                            <span class="golden-sep">♦</span>
+                            <span class="meta-item">📅 بدأنا الرحلة: {p['created_at'][:10]}</span>
                         </div>
                     </div>
-                """, unsafe_allow_html=True)
-
-                # ب) رسم أزرار التحكم (برمجياً) تحت كل بطاقة
-                c1, c2, _ = st.columns([1.2, 1, 3])
-                with c1:
-                    if st.button(f"فتح المشروع 🔓", key=f"open_{p['id']}", use_container_width=True):
-                        st.query_params["pid"] = p['id']
-                        st.session_state.project_data.update({
-                            "id": p['id'], "name": p['name'], "type": p['project_type'],
-                            "site": p['site_context'], "requirements": p['requirements']
-                        })
-                        st.session_state.messages = db_handler.get_project_messages(p['id'])
-                        st.session_state.app_stage = 'main_chat'
+                    <div class="corner top-left"></div>
+                    <div class="corner top-right"></div>
+                    <div class="corner bottom-left"></div>
+                    <div class="corner bottom-right"></div>
+                </div>
+            """
+            st.markdown(html_content, unsafe_allow_html=True)
+            
+            # 2. أزرار التحكم المركزية (فتح أو تصفير)
+            st.markdown("<br>", unsafe_allow_html=True)
+            c_open, c_reset = st.columns([1, 1])
+            
+            with c_open:
+                if st.button("دخول المرسم المعماري 🔓", use_container_width=True, type="primary"):
+                    st.query_params["pid"] = p['id']
+                    st.session_state.project_data.update({
+                        "id": p['id'], "name": p['name'], "type": p['project_type'],
+                        "site": p['site_context'], "requirements": p['requirements']
+                    })
+                    st.session_state.messages = db_handler.get_project_messages(p['id'])
+                    st.session_state.app_stage = 'main_chat'
+                    st.rerun()
+                    
+            with c_reset:
+                # زر "تغيير المشروع" يظهر بداخل بوب أوفر للأمان
+                with st.popover("إنهاء وحذف المشروع", use_container_width=True):
+                    st.error("⚠️ تحذير: هذا الإجراء سيحذف المشروع الحالي لبدء مشروع جديد كلياً.")
+                    if st.button("تأكيد الحذف النهائي", key="reset_single_p", type="primary", use_container_width=True):
+                        db_handler.delete_project_permanently(p['id'])
                         st.rerun()
-                with c2:
-                    with st.popover("حذف 🗑️", use_container_width=True):
-                        st.caption("هل أنتِ متأكدة؟ لا يمكن التراجع.")
-                        if st.button("نعم، حذف نهائي", key=f"del_{p['id']}", type="primary", use_container_width=True):
-                            db_handler.delete_project_permanently(p['id'])
-                            st.rerun()
-                
-                st.markdown("<div style='margin-bottom:20px'></div>", unsafe_allow_html=True)
-
-    # زر إضافة مشروع جديد
-    st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("➕ إضافة مشروع جديد للمرسم", use_container_width=True):
-        st.session_state.app_stage = 'project_form'
-        st.rerun()
+        
+        else:
+            # 3. حالة "المرسم الفارغ" (عندما لا يوجد مشروع)
+            st.markdown("""
+                <div style='text-align: center; padding: 100px 20px;'>
+                    <div style="font-size: 4rem; opacity: 0.2; margin-bottom: 20px;">📐</div>
+                    <h2 style='color: #666;'>المرسم بانتظار فكرتكِ الأولى..</h2>
+                    <p style='color: #444;'>إسراء، آيلا جاهزة لمرافقتكِ في تحدي هذا الكورس.</p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("➕ ابدأي مشروعكِ المعماري الآن", use_container_width=True, type="primary"):
+                st.session_state.app_stage = 'project_form'
+                st.rerun()
+    # --- نهاية نظام المشروع الواحد ---
 
 # =============================================================================
 # 📝 المرحلة الثالثة: فورم بيانات المشروع
@@ -729,15 +913,41 @@ elif st.session_state.app_stage == 'main_chat':
         st.caption("Your Architectural Companion Soulmate")
         
         # --- 1. زر الرجوع للقائمة الرئيسية ---
-        if st.button("🔙 العودة للمشاريع", use_container_width=True):
+        if st.button("🔙", use_container_width=True):
             st.session_state.app_stage = 'project_landing'
             st.session_state.messages = [] 
             st.rerun()
             
         st.markdown("---")
         
-        # اختيار المرحلة
-        selected_phase_key = st.selectbox("اختر مرحلة المشروع:", list(phases.keys()), index=0)
+        # --- المحرك المطور: فهرس المخططات المعماري ---
+        st.markdown("<p style='color: #666; font-size: 0.8rem; margin-bottom: 12px; letter-spacing: 2px; text-align:right;'>ARCHITECTURE INDEX</p>", unsafe_allow_html=True)
+        
+        phase_keys = list(phases.keys())
+        
+        for idx, p_name in enumerate(phase_keys):
+            is_active = (idx == st.session_state.active_phase_idx)
+            
+            # تحديد الأيقونة الحالة فقط (بدون إضافة نص زائد)
+            if idx < st.session_state.active_phase_idx:
+                status_icon = "🟢" 
+            elif idx == st.session_state.active_phase_idx:
+                status_icon = "📐" 
+            elif idx == 2 and not st.session_state.phase2_unlocked:
+                status_icon = "🔒" 
+            else:
+                status_icon = "⏳" 
+            
+            # رسم الزر
+            if st.button(f"{status_icon} {p_name}", 
+                         key=f"nav_clean_{idx}", 
+                         use_container_width=True, 
+                         type="primary" if is_active else "secondary"):
+                st.session_state.active_phase_idx = idx
+                st.rerun()
+        
+        # ربط المرحلة المختارة ببقية الكود (للحفاظ على الوظائف)
+        selected_phase_key = phase_keys[st.session_state.active_phase_idx]
         
         st.markdown("---")
         
@@ -799,7 +1009,7 @@ elif st.session_state.app_stage == 'main_chat':
                 st.session_state.app_stage = 'project_landing'
                 st.rerun()
 
-        if st.button("🚪 تسجيل خروج", type="secondary", use_container_width=True):
+        if st.button("تسجيل خروج", type="secondary", use_container_width=True):
             st.session_state.clear()
             st.query_params.clear() 
             db_handler.logout_user()
@@ -808,8 +1018,20 @@ elif st.session_state.app_stage == 'main_chat':
     p_data = st.session_state.get('project_data', {})
     project_title = p_data.get('name', 'New Project')
     
-    st.title(f"🏛️ {project_title}")
-    st.caption(f"Project Type: {p_data.get('type')} | Phase: {phases[selected_phase_key]}")
+    # هيدر الأستوديو المطور (Architecture Studio Header)
+    st.markdown(f"""
+        <div class="studio-header-bar">
+            <div>
+                <h1 class="studio-title">🏛️ {project_title}</h1>
+                <p style="color: #888; margin-top: 5px; font-size: 0.9rem; letter-spacing: 1px;">
+                    STUDIO: {p_data.get('type')} | <span style="color: #fca311;">PHASE: {phases[selected_phase_key]}</span>
+                </p>
+            </div>
+            <div style="text-align: left; opacity: 0.5;">
+                <span style="font-size: 0.8rem; color: #fca311;">AYLA ARC SYSTEM v2.0</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
     # ==================================================
     # 🕵️‍♂️ منطق الأقفال (The Guard System)
@@ -858,21 +1080,6 @@ elif st.session_state.app_stage == 'main_chat':
         """, unsafe_allow_html=True)
 
     else:
-        # --- (Active Mode) عرض الشات الطبيعي ---
-        if not st.session_state.messages:
-            real_name = p_data.get('user_real_name', 'إسراء')
-            nickname = p_data.get('user_nickname', 'سيرو')
-            
-            # نجلب الملخص إن وجد لنشعر المستخدم بالاستمرارية رغم الصفحة البيضاء
-            current_pid = st.session_state.project_data['id']
-            existing_summary = db_handler.get_project_summary(current_pid)
-            
-            if existing_summary:
-                welcome_msg = f"أهلاً {real_name}.. فتحنا صفحة جديدة نظيفة ✨.\nأنا راجعت ذاكرتي ومستحضرة تفاصيل المشروع (الموقع، المتطلبات، والقرارات السابقة). كملي، شنو الخطوة الجاية؟"
-            else:
-                welcome_msg = f"أهلاً يا زميلتي العزيزة {real_name} (أو مثل ما تحبين أسميج: {nickname})! 👷‍♀️\n\nتم استيعاب مشروع **{project_title}** بنجاح.\nإحنا حالياً بـ **{phases[selected_phase_key]}**. جاهز أشوف شغلك (صور/مخططات) أو نتناقش."
-            
-            st.session_state.messages.append({"role": "assistant", "content": welcome_msg})
 
         # --- عرض الرسائل ---
         user_indices = [i for i, m in enumerate(st.session_state.messages) if m['role'] == 'user']

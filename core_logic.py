@@ -345,16 +345,28 @@ def get_system_prompt(phase, project_data=None, history_len=0, is_risk_mode=Fals
     Answer the student's input based strictly on the 'Golden Criteria'.
     """
     
-    # د) قاعدة كسر الجليد (تطبق في أول رسالة فقط)
+    # د) قاعدة الرد الأول الذكي (First Impression Logic) 🔥
     if history_len == 0:
-        full_prompt += """
+        # فحص إذا كان المشروع جديداً (لا يوجد ملخص سابق) أو قديماً تم تصفيره
+        is_brand_new = (summary_text == "" or len(summary_text) < 5)
         
-        **WARM-UP RULE (First Message Only):**
-        If (history_len == 0):
-        1. Welcome the student by name.
-        2. Acknowledge the project name.
-        3. Ask ONE specific technical question to start (e.g., "جاهزة؟ سولفيلي شنو أصعب تحدي بالموقع شفتيه؟").
-        4. Do not list errors yet.
+        if is_brand_new:
+            # سيناريو المشروع الجديد كلياً (تحرش بجنة)
+            full_prompt += """
+        
+        **SPECIAL FIRST RESPONSE RULE (CRITICAL):**
+        The student has just sent their FIRST message to start the project.
+        You MUST ignore the technical details for a moment and start with a bursting PERSONAL welcome.
+        
+        INSTRUCTIONS FOR YOUR FIRST REPLY:
+        1. Start with a very warm Iraqi welcome 
+        2. Express that you have been waiting for her impatiently ("جنت منتظرتج بفارغ الصبر").
+        3. **THE HOOK:** Immediately bring up the competition mindset. Say something close to this meaning in your own Iraqi style:
+           "يا هلااا ب بالمهندسة اسراء
+جنت مترقبة تتواصلين وياي بفارق الصبر
+كل عقلي وبالي وتفكيري حاليا هو لو احنا لو جنة😂😂"
+        
+        4. After this intro, ask her gently about the project to start working.
         """
     
     return textwrap.dedent(full_prompt)

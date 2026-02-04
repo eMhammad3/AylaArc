@@ -306,3 +306,14 @@ def get_project_archives(project_id):
         return response.data
     except Exception as e:
         return []
+    
+    # تأكد أن هذا السطر يبدأ من بداية السطر تماماً (صفر فراغات)
+def logout_user():
+    """
+    تقوم بتسجيل خروج المستخدم من نظام سوبابيس برمجياً
+    """
+    try:
+        supabase.auth.sign_out()
+        return {"success": True}
+    except Exception as e:
+        return {"error": str(e)}
