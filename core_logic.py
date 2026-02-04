@@ -284,42 +284,71 @@ def get_system_prompt(phase, project_data=None, history_len=0, is_risk_mode=Fals
     # ج) عدسة المرحلة (مع إصلاح الربط)
     p_str = str(phase)
     
+    # ج) عدسة المرحلة المبرمجة بنظام الأقفال الذكي 🔐⚖️
+    p_str = str(phase)
+    
     if p_str.startswith("0️⃣"): # Phase 0
         phase_lens = """
-        CURRENT PHASE: Phase 0 (General Chat & Setup).
-        INSTRUCTIONS:
-        - Build rapport professionally. Ask about the student's readiness or exams.
-        - Do not give technical critique yet.
-        - Once ready, guide them firmly to "Phase 1".
+        CURRENT PHASE: Phase 0 (Setup & Introduction).
+        MISSION: Evaluate Sero's readiness for the project. 
+        UNLOCK CONDITION: If she clearly understands the challenge, you MUST end your reply with: [UNLOCK_PHASE_1]
         """
 
     elif p_str.startswith("1️⃣"): # Phase 1
         phase_lens = """
-        CURRENT PHASE: Phase 1 (Pre-Design Studies & Site Analysis).
-        
-        YOUR FOCUS ZONES (From Golden Criteria):
-        - [Section 9: Methodology] (SWOT, Data Accuracy).
-        - [Section 11: Technical Reality] (Regulations, Setbacks).
-        - [Section 5: Expert Details] (Orientation, Climate).
-
-        ⚠️ STRICT RULES (VETO POWER):
-        1. **NO FORM BEFORE ANALYSIS:** If the student talks about "Shape", "Style", or "3D" now, STOP THEM IMMEDIATELY. Tell them: "Form follows Function. We don't design shapes before understanding the site."
-        2. **DEMAND PRECISION:** Do not accept vague answers like "The weather is hot". Demand sun path direction, wind angles, and neighbor heights.
-        
-        STYLE: Discuss one critical point at a time. Don't overwhelm, but don't let them pass without precision.
+        CURRENT PHASE: Phase 1 (Site Analysis).
+        FOCUS: SWOT, Sun path, Wind direction, and Neighbor heights.
+        ⚠️ STRICT RULE: Veto any "Form" or "Style" talk.
+        UNLOCK CONDITION: If she proves a deep understanding of site constraints and climatic impact, end with: [UNLOCK_PHASE_2]
         """
-    
+
     elif p_str.startswith("2️⃣"): # Phase 2
         phase_lens = """
         CURRENT PHASE: Phase 2 (Concept & Zoning).
-        
-        YOUR FOCUS ZONES:
-        - [Section 1: Concept] (Storytelling).
-        - [Section 2: Functional Excellence] (Zoning).
+        FOCUS: Storytelling and logical spatial relationships (Public/Private).
+        UNLOCK CONDITION: If the story is clear and Zoning respects circulation flow, end with: [UNLOCK_PHASE_3]
+        """
 
-        ⚠️ STRICT RULES (VETO POWER):
-        1. **STRUCTURAL LOGIC:** Encourage creativity but VETO anything that defies gravity or structural logic (unless justified).
-        2. **ZONING FIRST:** Ensure public/private separation is clear before praising any aesthetics.
+    elif p_str.startswith("3️⃣"): # Phase 3
+        phase_lens = """
+        CURRENT PHASE: Phase 3 (Sketches).
+        FOCUS: Evolution of the idea from scribble to form. Composition of the board.
+        UNLOCK CONDITION: If sketches show design maturity and idea development, end with: [UNLOCK_PHASE_4]
+        """
+
+    elif p_str.startswith("4️⃣"): # Phase 4
+        phase_lens = """
+        CURRENT PHASE: Phase 4 (2D Plans).
+        FOCUS: Neufert standards, wall thicknesses, and structural grid.
+        UNLOCK CONDITION: If the plans are functionally flawless and structurally logical, end with: [UNLOCK_PHASE_5]
+        """
+
+    elif p_str.startswith("5️⃣"): # Phase 5
+        phase_lens = """
+        CURRENT PHASE: Phase 5 (3D Modeling).
+        FOCUS: Massing, vertical connectivity (Voids/Double Heights), and facades rhythm.
+        UNLOCK CONDITION: If 3D massing is architecturally expressive and spatial, end with: [UNLOCK_PHASE_6]
+        """
+
+    elif p_str.startswith("6️⃣"): # Phase 6
+        phase_lens = """
+        CURRENT PHASE: Phase 6 (Visualization).
+        FOCUS: Materials, lighting, and User Experience (Human figures/Furniture).
+        UNLOCK CONDITION: If the "Life Story" inside the building is felt through the renders, end with: [UNLOCK_PHASE_7]
+        """
+
+    elif p_str.startswith("7️⃣"): # Phase 7
+        phase_lens = """
+        CURRENT PHASE: Phase 7 (Physical Model).
+        FOCUS: Craftsmanship, scale accuracy, and materiality.
+        UNLOCK CONDITION: If the physical model looks professional and clean, end with: [UNLOCK_PHASE_8]
+        """
+
+    elif p_str.startswith("8️⃣"): # Phase 8
+        phase_lens = """
+        CURRENT PHASE: Phase 8 (Final Submission).
+        FOCUS: Presentation script, defense logic, and "The Money Shot".
+        MISSION: Help her prepare the marketing pitch for Dr. Anwar.
         """
     else:
         phase_lens = f"CURRENT PHASE: {phase}. General advice mode based on Golden Criteria."

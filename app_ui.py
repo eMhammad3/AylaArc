@@ -90,15 +90,15 @@ if 'active_phase_idx' not in st.session_state:
 
 # تعريف المراحل (نسخة مختصرة وأنيقة للواجهة)
 phases = {
-    "0️⃣ المحادثة والإعداد": "0️⃣ General Chat & Setup",
-    "1️⃣ تحليل الموقع": "1️⃣ Site & Research (Active)",
-    "2️⃣ الفكرة والتوزيع": "2️⃣ Concept & Zoning",
-    "3️⃣ السكيتشات": "3️⃣ Sketches & Freehand (Locked)",
-    "4️⃣ المخططات (2D)": "4️⃣ 2D Drafting / Plans (Locked)",
-    "5️⃣ المودل (3D)": "5️⃣ 3D Modeling (Locked)",
-    "6️⃣ الإظهار المعماري": "6️⃣ Visualization (Locked)",
-    "7️⃣ الماكيت (Physical)": "7️⃣ Physical Model (Locked)",
-    "8️⃣ التحكيم والتسليم": "8️⃣ Jury & Marketing (Locked)"
+    "0️⃣ المحادثة والإعداد | SETUP": "0️⃣ General Chat & Setup",
+    "1️⃣ تحليل الموقع | SITE ANALYSIS": "1️⃣ Site & Research (Active)",
+    "2️⃣ الفكرة والتوزيع | CON&ZONINIG": "2️⃣ Concept & Zoning",
+    "3️⃣ السكيتشات | SKETCHES": "3️⃣ Sketches & Freehand",
+    "4️⃣ المخططات | 2D PLANS": "4️⃣ 2D Drafting / Plans",
+    "5️⃣ المودل | 3D MODELING": "5️⃣ 3D Modeling",
+    "6️⃣ الإظهار المعماري | VIZ": "6️⃣ Visualization",
+    "7️⃣ الماكيت | PHYSICAL MODEL": "7️⃣ Physical Model",
+    "8️⃣ التسليم النهائي | SUBMISSION": "8️⃣ Jury & Marketing"
 }
 
 # 3. الستايل (CSS) - النسخة الذهبية (Clean Cut) ✨
@@ -442,27 +442,41 @@ st.markdown("""
             padding-bottom: 20px !important;
         }
             
-        /* =========================================
-           10. فهرس المخططات (ضبط الاحتواء والخط)
-           ========================================= */
+        /* 10. فهرس المخططات المطور جداً */
         div[data-testid="stSidebar"] button {
-            height: auto !important;
-            padding: 10px 12px !important;
-            border-radius: 0px 10px 10px 0px !important;
+            padding: 8px 10px !important;
+            border-radius: 0px 8px 8px 0px !important;
             border: none !important;
-            border-right: 4px solid #222 !important;
-            background-color: rgba(255, 255, 255, 0.02) !important;
-            margin-bottom: 6px !important;
-            
-            /* منع النص من الخروج أو التكسر */
+            border-right: 3px solid #222 !important;
+            background-color: rgba(255, 255, 255, 0.03) !important;
+            margin-bottom: 5px !important;
             white-space: nowrap !important;
             overflow: hidden !important;
-            text-overflow: ellipsis !important; /* يضع ثلاث نقاط إذا كان النص طويلاً جداً */
-            font-size: 0.85rem !important; /* تصغير الخط ليتناسب مع العرض */
+            text-overflow: clip !important; /* قطع النص بدقة */
+            font-size: 0.78rem !important; /* تصغير الخط لضمان دخول ZONING */
             display: flex !important;
             justify-content: flex-start !important;
-            align-items: center !important;
-            gap: 10px !important;
+            transition: 0.3s ease-in-out !important;
+        }
+
+        /* القفل الحقيقي: إجبار الشفافية واللون الأحمر الباهت */
+        div[data-testid="stSidebar"] button:disabled {
+            opacity: 0.25 !important; /* شفافية حقيقية */
+            filter: grayscale(100%) !important;
+            color: #ff4b4b !important; /* تلميح باللون الأحمر للقفل */
+            border-right: 3px solid #441111 !important;
+            background-color: transparent !important;
+        }
+
+        /* المرحلة النشطة: توهج ذهبي */
+        div[data-testid="stSidebar"] button[kind="primary"] {
+            border-right: 5px solid #fca311 !important;
+            background: linear-gradient(90deg, rgba(252, 163, 17, 0.15) 0%, rgba(0,0,0,0) 100%) !important;
+            color: #fca311 !important;
+            font-weight: 800 !important;
+            opacity: 1 !important; /* وضوح كامل */
+        }
+            
         }
 
         /* المرحلة النشطة */
@@ -471,6 +485,22 @@ st.markdown("""
             background: linear-gradient(90deg, rgba(252, 163, 17, 0.15) 0%, rgba(0,0,0,0) 100%) !important;
             color: #fca311 !important;
             font-weight: bold !important;
+        }
+            
+            /* استهداف الأزرار المعطلة داخل السايدبار مباشرة لضمان الشفافية */
+        div[data-testid="stSidebar"] button:disabled {
+            opacity: 0.2 !important; /* شفافة جداً */
+            filter: grayscale(100%) blur(1px) !important; /* باهتة ومموّهة قليلاً */
+            border: 1px dashed rgba(255,255,255,0.2) !important;
+            background-color: transparent !important;
+            cursor: not-allowed !important;
+        }
+
+        /* ستايل المرحلة النشطة (توهج ذهبي) */
+        .active-phase-highlight {
+            border-right: 5px solid #fca311 !important;
+            background: linear-gradient(90deg, rgba(252, 163, 17, 0.2) 0%, rgba(0,0,0,0) 100%) !important;
+            box-shadow: -10px 0 20px rgba(252, 163, 17, 0.1) !important;
         }
             
     </style>
@@ -920,31 +950,37 @@ elif st.session_state.app_stage == 'main_chat':
             
         st.markdown("---")
         
-        # --- المحرك المطور: فهرس المخططات المعماري ---
-        st.markdown("<p style='color: #666; font-size: 0.8rem; margin-bottom: 12px; letter-spacing: 2px; text-align:right;'>ARCHITECTURE INDEX</p>", unsafe_allow_html=True)
+        # --- المحرك المطور V4: فهرس المخططات بالأقفال الحمراء ---
+        st.markdown("<p style='color: #666; font-size: 0.75rem; margin-bottom: 12px; letter-spacing: 2px; text-align:right;'>ARCHITECTURE INDEX</p>", unsafe_allow_html=True)
         
         phase_keys = list(phases.keys())
-        
+        max_unlocked = st.session_state.project_data.get('unlocked_phase', 0) 
+
         for idx, p_name in enumerate(phase_keys):
             is_active = (idx == st.session_state.active_phase_idx)
+            is_locked = (idx > max_unlocked) 
             
-            # تحديد الأيقونة الحالة فقط (بدون إضافة نص زائد)
-            if idx < st.session_state.active_phase_idx:
-                status_icon = "🟢" 
-            elif idx == st.session_state.active_phase_idx:
-                status_icon = "📐" 
-            elif idx == 2 and not st.session_state.phase2_unlocked:
-                status_icon = "🔒" 
-            else:
-                status_icon = "⏳" 
-            
+            # تحديد الأيقونة: أحمر للمقفل، ذهبي للنشط، أخضر للمكتمل
+            if is_locked: status_icon = "🔴" # العلامة الحمراء كما طلبت
+            elif idx < st.session_state.active_phase_idx: status_icon = "🟢"
+            else: status_icon = "📐"
+
             # رسم الزر
             if st.button(f"{status_icon} {p_name}", 
-                         key=f"nav_clean_{idx}", 
+                         key=f"nav_v4_{idx}", 
                          use_container_width=True, 
+                         disabled=is_locked, 
                          type="primary" if is_active else "secondary"):
                 st.session_state.active_phase_idx = idx
                 st.rerun()
+            
+            # سطر متغير بعد المرحلة النشطة فقط
+            if is_active and idx == max_unlocked:
+                st.markdown(f"""
+                    <div style='background: rgba(252, 163, 17, 0.1); border-right: 2px solid #fca311; padding: 5px 10px; margin: -5px 0 10px 0; border-radius: 0 5px 5px 0;'>
+                        <p style='color: #fca311; font-size: 0.75rem; margin: 0;'>📝 للانتقال للمرحلة التالية.. يجب أن توافق آيلا.</p>
+                    </div>
+                """, unsafe_allow_html=True)
         
         # ربط المرحلة المختارة ببقية الكود (للحفاظ على الوظائف)
         selected_phase_key = phase_keys[st.session_state.active_phase_idx]
@@ -1190,8 +1226,33 @@ elif st.session_state.app_stage == 'main_chat':
                     except Exception as e:
                         st.error(f"Error: {e}")
             
+           # --- منطقة معالجة الرد النهائي ---
             if full_res and full_res.strip():
+                
+            # 🕵️‍♂️ المحرك الذكي للأقفال (من المرحلة 1 إلى 8)
+                for phase_num in range(1, 9):
+                    unlock_key = f"[UNLOCK_PHASE_{phase_num}]"
+                    
+                    if unlock_key in full_res:
+                        # 1. تنظيف النص لكي لا يرى الطالب الكود البرمجي
+                        full_res = full_res.replace(unlock_key, "")
+                        
+                        # 2. تحديث قاعدة البيانات (سوبابيس) لضمان عدم ضياع الإنجاز
+                        if 'id' in st.session_state.project_data:
+                            current_pid = st.session_state.project_data['id']
+                            db_handler.update_project_phase(current_pid, phase_num)
+                        
+                        # 3. تحديث الجلسة الحالية لفتح الزر فوراً
+                        st.session_state.project_data['unlocked_phase'] = phase_num
+                        
+                        # 4. رسالة تشجيعية تظهر لإسراء
+                        phase_display_name = list(phases.keys())[phase_num]
+                        st.toast(f"🔓 مبروك! آيلا فتحت لكِ: {phase_display_name}", icon="✨")
+                        break # نخرج من اللوب بمجرد إيجاد المفتاح
+
+                # 2. الكود القديم: حفظ وعرض الرسالة (بعد التنظيف) 💾
                 st.session_state.messages.append({"role": "assistant", "content": full_res})
+                
                 if 'id' in st.session_state.project_data:
                     current_pid = st.session_state.project_data['id']
                     db_handler.save_message(current_pid, "assistant", full_res)
@@ -1199,5 +1260,6 @@ elif st.session_state.app_stage == 'main_chat':
             elif not full_res:
                 st.warning("⚠️ لم يتم استلام رد من النموذج.")
             
+            # إنهاء التوليد وإعادة التشغيل
             st.session_state.trigger_generation = False
             st.rerun()
