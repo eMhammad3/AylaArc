@@ -137,8 +137,8 @@ def create_project(user_id, name, p_type, site, reqs, area):
             "site_context": site,
             "requirements": reqs,
             "site_area": area,
-            "current_phase": "Phase 1",
-            "unlocked_phase": 1,
+            "current_phase": "Phase 0",
+            "unlocked_phase": 0,
             "phase_tasks": [] # قائمة فارغة كبداية
         }).execute()
         return {"success": True, "data": response.data}
