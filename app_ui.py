@@ -1315,3 +1315,13 @@ elif st.session_state.app_stage == 'main_chat':
             st.session_state.trigger_generation = False
 
             st.rerun()
+
+
+
+
+
+
+
+
+
+

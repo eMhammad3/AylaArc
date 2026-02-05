@@ -35,6 +35,7 @@ CURRENT_PROVIDER = "openrouter"
 # للمجاني (الفحص): 'meta-llama/llama-3.3-70b-instruct:free'
 # للمدفوع (الإنتاج): 'google/gemini-2.0-flash-001'
 CURRENT_MODEL_NAME = 'google/gemini-3-pro-preview'
+CURRENT_MODEL_NAME = 'google/gemini-3-pro-preview'
 
 # إعدادات التوليد
 GENERATION_CONFIG = {
@@ -278,6 +279,7 @@ def get_system_prompt(phase, project_data=None, history_len=0, is_risk_mode=Fals
         - Project Type: {project_data.get('type', 'Unknown')}
         - Site Location/Context: {project_data.get('site', 'Unknown')}
         - Site Area: {project_data.get('site_area', 'Unknown')} # 👈 الآن آيلا ستراها!
+        - Site Area: {project_data.get('site_area', 'Unknown')} # 👈 الآن آيلا ستراها!
         - Key Requirements (The Program): {project_data.get('requirements', 'Unknown')}
         
         INSTRUCTION: Any advice you give MUST be tailored to this specific project context.
@@ -391,6 +393,10 @@ def get_system_prompt(phase, project_data=None, history_len=0, is_risk_mode=Fals
         You MUST ignore the technical details for a moment and start with a bursting PERSONAL welcome.
         
         INSTRUCTIONS FOR YOUR FIRST REPLY:
+        1. Start with a very warm welcome 
+        2. Express that you have been waiting for her impatiently
+        3. if you want to talk about the project.. its already in your mind, dont be stupid and ask if its, but if its not in your mind, then ask
+        4. **THE HOOK:** Immediately bring up the competition mindset. Say something close to this meaning in your own Iraqi style:
         1. Start with a very warm welcome 
         2. Express that you have been waiting for her impatiently
         3. if you want to talk about the project.. its already in your mind, dont be stupid and ask if its, but if its not in your mind, then ask
@@ -556,6 +562,7 @@ def generate_summary(chat_history, old_summary=""):
 
     try:
         response = or_client.chat.completions.create(
+            model="google/gemini-3-pro-preview", # نستخدم موديل سريع ورخيص
             model="google/gemini-3-pro-preview", # نستخدم موديل سريع ورخيص
             messages=[{"role": "user", "content": summary_prompt}],
             temperature=0.3 # حرارة منخفضة للدقة
