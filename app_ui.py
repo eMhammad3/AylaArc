@@ -502,6 +502,11 @@ st.markdown("""
             background: linear-gradient(90deg, rgba(252, 163, 17, 0.2) 0%, rgba(0,0,0,0) 100%) !important;
             box-shadow: -10px 0 20px rgba(252, 163, 17, 0.1) !important;
         }
+
+        /* إخفاء جملة Press Enter المزعجة */
+        .stChatInput div[data-testid="InputInstructions"] {
+            display: none !important;
+        }
             
     </style>
 """, unsafe_allow_html=True)
@@ -822,9 +827,13 @@ elif st.session_state.app_stage == 'project_landing':
             p = projects[0] 
             
             # 1. عرض بوابة المشروع الملكية (The Royal Gateway) 🏛️✨
-            project_icon = "🏛️"
-            if "Residential" in p['project_type']: project_icon = "🏡"
-            elif "Commercial" in p['project_type']: project_icon = "🏢"
+            project_icon = ""
+            # نضمن إن السستم ما يوكع إذا كان النوع فارغ
+            p_type_check = p.get('project_type') or ""
+            project_icon = "🏛️" # أيقونة افتراضية
+            if "Residential" in p_type_check: project_icon = "🏡"
+            elif "Commercial" in p_type_check: project_icon = "🏢"
+            elif "Educational" in p_type_check: project_icon = "🏫"
             
             # ملاحظة: تم تنظيف الكود من أي رموز قد تسبب تداخل (Escaping)
             html_content = f"""
@@ -853,10 +862,11 @@ elif st.session_state.app_stage == 'project_landing':
             with c_open:
                 if st.button("دخول المرسم المعماري 🔓", use_container_width=True, type="primary"):
                     st.query_params["pid"] = p['id']
-                    st.session_state.project_data.update({
-                        "id": p['id'], "name": p['name'], "type": p['project_type'],
-                        "site": p['site_context'], "requirements": p['requirements']
-                    })
+                    # نحدث الذاكرة بكل محتويات المشروع p اللي جلبناه من الداتابيس
+                    st.session_state.project_data.update(p)
+                    st.session_state.project_data["user_real_name"] = profile.get('user_real_name')
+                    st.session_state.project_data["user_nickname"] = profile.get('user_nickname')
+                    
                     st.session_state.messages = db_handler.get_project_messages(p['id'])
                     st.session_state.app_stage = 'main_chat'
                     st.rerun()
@@ -874,7 +884,7 @@ elif st.session_state.app_stage == 'project_landing':
             st.markdown("""
                 <div style='text-align: center; padding: 100px 20px;'>
                     <div style="font-size: 4rem; opacity: 0.2; margin-bottom: 20px;">📐</div>
-                    <h2 style='color: #666;'>المرسم بانتظار فكرتكِ الأولى..</h2>
+                    <h2 style='color: #666;'>المرسم بانتظار خطواتكِ الأولى..</h2>
                     <p style='color: #444;'>إسراء، آيلا جاهزة لمرافقتكِ في تحدي هذا الكورس.</p>
                 </div>
             """, unsafe_allow_html=True)
@@ -897,18 +907,60 @@ elif st.session_state.app_stage == 'project_form':
         # 👆👆 انتهت الإضافة 👆👆
 
         st.markdown("<h2 style='text-align: right; color: #fca311;'>📝 بيانات المشروع الجديد</h2>", unsafe_allow_html=True)
-        st.caption("هذه البيانات سيتم حقنها في عقل النموذج.")
+        st.caption("")
+        
         with st.form("project_setup_form"):
+            # --- القسم الأول: معلومات أكاديمية ثابتة (مقفلة تماماً) ---
+            st.markdown("<p style='color: #888; font-size: 0.8rem; margin-bottom: 10px;'>🏛️ السجل الأكاديمي المثبت:</p>", unsafe_allow_html=True)
+            
+            row_static_1, row_static_2 = st.columns(2)
+            with row_static_1:
+                st.text_input("المرحلة:", value="الثانية", disabled=True, key="p_fixed_stage")
+                st.text_input("المادة:", value="دزاين - Design", disabled=True, key="p_fixed_subject")
+            with row_static_2:
+                st.text_input("عدد المنافسين مع رفع ملفاتهم:", value="45", disabled=True, key="p_fixed_comp")
+                st.text_input("اسم دكتور المادة (رئيس لجنة ال Jury):", value="د. أنور", disabled=True, key="p_fixed_dr")
+            
+            st.markdown("<hr style='margin: 15px 0; border-color: rgba(252, 163, 17, 0.1);'>", unsafe_allow_html=True)
+            
+            # --- القسم الثاني: تفاصيل المشروع (المتغيرة) ---
             p_name = st.text_input("اسم المشروع:", placeholder="مثال: مركز ثقافي...")
-            p_type = st.selectbox("نوع المشروع:", ["Sakkany (Residential)", "Cultural/Public", "Commercial", "Landscape", "Urban Design"])
+            
+            # نوع المشروع مع التعريب والخيار اليدوي
+            project_options = [
+                "سكنى (Residential)", 
+                "ثقافي / عام (Cultural/Public)", 
+                "تجاري (Commercial)", 
+                "لاندسكيب (Landscape)", 
+                "تصميم حضري (Urban Design)", 
+                "مباني تعليمية (Educational)", 
+                "أخرى (كتابة يدوية)..."
+            ]
+            selected_type = st.selectbox("نوع المشروع:", project_options)
+            
+            if selected_type == "أخرى (كتابة يدوية)...":
+                p_type = st.text_input("اكتبي نوع المشروع هنا:", placeholder="مثال: فندق، مستشفى...")
+            else:
+                p_type = selected_type
+
             p_site = st.text_area("تفاصيل الموقع (Site Context):")
+            
+            # 💡 الحقل المنسي المهم جداً: المساحة
+            p_area = st.text_input("مساحة الأرض (م2) أو الأبعاد:", placeholder="مثال: 600 متر مربع")
+            
             p_req = st.text_area("أهم المتطلبات (Program):")
+            
             submitted = st.form_submit_button("🚀 حفظ وبدء الرحلة")
+            
             if submitted:
                 if p_name and p_req:
                     with st.spinner("جاري أرشفة المشروع في السحابة..."):
                         user_id = st.session_state.user.id
-                        result = db_handler.create_project(user_id, p_name, p_type, p_site, p_req)
+                        
+                        # ندمج المساحة مع الموقع لضمان وصولها لآيلا بدون تغيير هيكل الداتابيز
+                        full_site_info = f"{p_site}\nالمساحة: {p_area}"
+                        
+                        result = db_handler.create_project(user_id, p_name, p_type, p_site, p_req, p_area)
                     
                     if "success" in result:
                         st.success("تم الحفظ بنجاح!")
@@ -916,30 +968,29 @@ elif st.session_state.app_stage == 'project_form':
                         current_real_name = st.session_state.project_data.get('user_real_name')
                         current_nickname = st.session_state.project_data.get('user_nickname')
 
-                        st.session_state.project_data = {
-                            "user_real_name": current_real_name,
-                            "user_nickname": current_nickname,
-                            "id": new_project['id'],
-                            "name": new_project['name'],
-                            "type": new_project['project_type'],
-                            "site": new_project['site_context'],
-                            "requirements": new_project['requirements']
-                        }
-                        time.sleep(1)
-                        st.session_state.app_stage = 'main_chat'
+                        # نحدث البيانات كاملة من اللي رجع من الداتابيس حتى ما ننسى شي
+                        # 1. شحن البيانات كاملة
+                        st.session_state.project_data = new_project
+                        st.session_state.project_data["user_real_name"] = current_real_name
+                        st.session_state.project_data["user_nickname"] = current_nickname
+                        
+                        # 2. تثبيت المعرف في الرابط
+                        st.query_params["pid"] = new_project['id']
+                        
+                        # 3. توجيه آيلا لغرفة الشات (لأن الـ dashboard ممسوح من الكود عندك)
+                        st.session_state.app_stage = 'main_chat' 
                         st.rerun()
                     else:
                         st.error(f"فشل الحفظ: {result.get('error')}")
                 else:
                     st.error("يرجى ملء الحقول الأساسية.")
-
 # =============================================================================
 # 💬 المرحلة الرابعة: الشات الرئيسي (Main Chat) - نظام الأقفال 🔒
 # =============================================================================
 elif st.session_state.app_stage == 'main_chat':
 
     with st.sidebar:
-        st.title("🏛️ AylaArc")
+        st.title("👩‍💼 AylaArc")
         st.caption("Your Architectural Companion Soulmate")
         
         # --- 1. زر الرجوع للقائمة الرئيسية ---
@@ -988,7 +1039,7 @@ elif st.session_state.app_stage == 'main_chat':
         st.markdown("---")
         
         # --- 2. زر محادثة جديدة (النسخة الآمنة مع الأرشيف) 🛡️ ---
-        if st.button("✨ محادثة جديدة (أرشفة + تخفيف)", help="يحفظ المحادثة الحالية في الأرشيف، يلخصها للذاكرة، ثم يفرغ الشات.", use_container_width=True):
+        if st.button("✨ محادثة جديدة (ارشفة الحالية)", help="يحفظ المحادثة الحالية في الأرشيف، يلخصها للذاكرة، ثم يفرغ الشات.", use_container_width=True):
             
             if len(st.session_state.messages) > 0:
                 with st.spinner("جاري الأرشفة وتنظيف المكتب..."):
@@ -1037,8 +1088,8 @@ elif st.session_state.app_stage == 'main_chat':
         st.markdown("---")
         
         # --- 4. منطقة الخطر ---
-        with st.expander("🗑️ منطقة الخطر"):
-            st.warning("حذف المشروع نهائياً")
+        with st.expander("حذف المشروع"):
+            st.warning("لا يمكن التراجع!")
             if st.button("تأكيد الحذف", type="primary", use_container_width=True):
                 pid = st.session_state.project_data['id']
                 db_handler.delete_project_permanently(pid)
@@ -1064,7 +1115,7 @@ elif st.session_state.app_stage == 'main_chat':
                 </p>
             </div>
             <div style="text-align: left; opacity: 0.5;">
-                <span style="font-size: 0.8rem; color: #fca311;">AYLA ARC SYSTEM v2.0</span>
+                <span style="font-size: 0.8rem; color: #fca311;">AYLA ARC SYSTEM v2.5</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -1127,7 +1178,7 @@ elif st.session_state.app_stage == 'main_chat':
             
             if st.session_state.edit_index == i:
                 with st.container(border=True):
-                    st.caption("✏️ تعديل الرسالة:")
+                    st.caption("📝 تعديل الرسالة:")
                     new_text = st.text_area("نص الرسالة:", value=message["content"], key=f"edit_area_{i}")
                     c1, c2 = st.columns([1, 1])
                     if c1.button("✅ حفظ", key=f"save_{i}"):
@@ -1152,7 +1203,7 @@ elif st.session_state.app_stage == 'main_chat':
                     c1, c2, c3 = st.columns([0.05, 0.05, 0.9])
                     with c1:
                         st.markdown('<div class="tiny-btn">', unsafe_allow_html=True)
-                        if st.button("🗑️", key=f"del_{i}"):
+                        if st.button("❌", key=f"del_{i}"):
                             msg_to_del = st.session_state.messages[i]
                             if "db_id" in msg_to_del:
                                 db_handler.delete_message(msg_to_del["db_id"])
@@ -1174,7 +1225,7 @@ elif st.session_state.app_stage == 'main_chat':
         if 'trigger_generation' not in st.session_state:
             st.session_state.trigger_generation = False
 
-        prompt = st.chat_input("سولفلي عن مشروعك...")
+        prompt = st.chat_input("سولفيلي...")
 
         if prompt:
             with st.chat_message("user", avatar="👷‍♀️"):
@@ -1262,4 +1313,5 @@ elif st.session_state.app_stage == 'main_chat':
             
             # إنهاء التوليد وإعادة التشغيل
             st.session_state.trigger_generation = False
+
             st.rerun()

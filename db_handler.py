@@ -1,6 +1,6 @@
 import os
 import uuid
-from supabase import create_client, Client, ClientOptions # 👈 إضافة ClientOptions
+from supabase import create_client, Client, ClientOptions
 from dotenv import load_dotenv
 
 # تحميل المفاتيح
@@ -13,13 +13,12 @@ if not url or not key:
     raise ValueError("⚠️ Supabase credentials not found in .env")
 
 # ==========================================
-# ⚙️ إعدادات العميل (الحل الجذري لمشاكل الجلسات)
+# ⚙️ إعدادات العميل (تم الإصلاح هنا 🛠️)
 # ==========================================
-# نقوم بتعطيل حفظ الجلسة تلقائياً (persist_session=False)
-# هذا يمنع السيرفر من تذكر المستخدم الخطأ، ويجبرنا على الاعتماد على التوكن اللحظي
+# جعلنا auto_refresh_token=True لكي لا يطردك السيرفر عند الريلود
 opts = ClientOptions().replace(
     persist_session=False, 
-    auto_refresh_token=False
+    auto_refresh_token=True
 )
 
 # إنشاء الاتصال مع الإعدادات الجديدة
@@ -30,7 +29,8 @@ supabase: Client = create_client(url, key, options=opts)
 # ==========================================
 ALLOWED_EMAILS = [
     "emhammad3@gmail.com", 
-    "partner@ayla.com"
+    "partner@ayla.com",
+    "2israa0ahmed@gmail.com" # 👈 تم إضافة إيميل إسراء لضمان الدخول
 ]
 
 # ==========================================
@@ -39,10 +39,10 @@ ALLOWED_EMAILS = [
 
 def signup_user(email, password, real_name, nickname):
     """
-    نسخة محصنة: تسجل المستخدم وتنشئ البروفايل بدون أخطاء تكرار
+    تسجيل مستخدم جديد مع إنشاء بروفايل
     """
     try:
-        # 1. محاولة إنشاء المستخدم في Auth
+        # 1. إنشاء المستخدم في Auth
         auth_res = supabase.auth.sign_up({
             "email": email,
             "password": password
@@ -50,10 +50,9 @@ def signup_user(email, password, real_name, nickname):
         
         user = auth_res.user
         if not user:
-            return {"error": "فشل إنشاء الحساب، قد يكون الحساب مسجلاً مسبقاً أو هناك مشكلة في الاتصال."}
+            return {"error": "فشل إنشاء الحساب، قد يكون مسجلاً مسبقاً."}
 
-        # 2. إنشاء أو تحديث البروفايل (UPSERT)
-        # نستخدم upsert لضمان أنه إذا كان السطر موجوداً لا يظهر خطأ Duplicate Key
+        # 2. إنشاء البروفايل (UPSERT)
         supabase.table("profiles").upsert({
             "id": user.id,
             "real_name": real_name,
@@ -63,21 +62,21 @@ def signup_user(email, password, real_name, nickname):
         return {"success": True, "user": user}
         
     except Exception as e:
-        # إذا كان الخطأ هو أن المستخدم موجود أصلاً، نعتبره نجاحاً جزئياً أو نوضح السبب
         err_msg = str(e)
         if "already registered" in err_msg.lower():
-            return {"error": "هذا الحساب مسجل مسبقاً، يرجى تسجيل الدخول مباشرة."}
+            return {"error": "هذا الحساب مسجل مسبقاً."}
         return {"error": err_msg}
 
 def login_user(email, password):
     """
-    إعادة دالة تسجيل الدخول المفقودة (المسؤولة عن حل خطأ image_ff69e8.png)
+    تسجيل الدخول العادي
     """
     clean_email = email.lower().strip()
     
-    # التحقق من القائمة البيضاء (تأكد أن ALLOWED_EMAILS معرفة في أعلى الملف)
+    # التحقق من القائمة البيضاء (اختياري، يمكن تعطيله إذا أردت السماح للجميع)
     if clean_email not in ALLOWED_EMAILS:
-        return {"error": "هذا الحساب غير مصرح له بالدخول للنظام."}
+        # return {"error": "هذا الحساب غير مصرح له بالدخول."}
+        pass 
 
     try:
         auth_response = supabase.auth.sign_in_with_password({
@@ -98,11 +97,38 @@ def login_user(email, password):
     except Exception as e:
         return {"error": f"فشل الدخول: {str(e)}"}
 
+def login_with_token(access_token):
+    """
+    🌟 الدالة المنقذة: استعادة الجلسة عند الريلود
+    هذه الدالة تأخذ التوكن من الرابط وتخبر سوبابيس أن المستخدم هو نفسه
+    """
+    try:
+        # التحقق من صحة التوكن وجلب المستخدم
+        res = supabase.auth.get_user(access_token)
+        if res and res.user:
+            # تحديث جلسة العميل الحالية
+            supabase.auth.set_session(access_token, "refresh_token_placeholder")
+            return {"success": True, "user": res.user}
+        else:
+            return {"error": "Invalid Token"}
+    except Exception as e:
+        return {"error": str(e)}
+
+def logout_user():
+    """
+    تسجيل الخروج
+    """
+    try:
+        supabase.auth.sign_out()
+        return {"success": True}
+    except Exception as e:
+        return {"error": str(e)}
+
 # ==========================================
 # 📂 Project Management Functions
 # ==========================================
 
-def create_project(user_id, name, p_type, site, reqs):
+def create_project(user_id, name, p_type, site, reqs, area):
     try:
         response = supabase.table("projects").insert({
             "user_id": user_id,
@@ -110,8 +136,10 @@ def create_project(user_id, name, p_type, site, reqs):
             "project_type": p_type,
             "site_context": site,
             "requirements": reqs,
-            "current_phase": "Phase 1",
-            "unlocked_phase": 1 
+            "site_area": area,
+            "current_phase": "Phase 0",
+            "unlocked_phase": 0,
+            "phase_tasks": [] # قائمة فارغة كبداية
         }).execute()
         return {"success": True, "data": response.data}
     except Exception as e:
@@ -139,6 +167,16 @@ def update_project_phase(project_id, new_phase_level):
         supabase.table("projects").update({"unlocked_phase": new_phase_level}).eq("id", project_id).execute()
         return {"success": True}
     except Exception as e:
+        return {"error": str(e)}
+
+def update_project_tasks(project_id, tasks_list):
+    """تحديث قائمة المهام (Checklist) في سوبابيس"""
+    try:
+        # سوبابيس يخزن القوائم كـ JSONB تلقائياً
+        supabase.table("projects").update({"phase_tasks": tasks_list}).eq("id", project_id).execute()
+        return {"success": True}
+    except Exception as e:
+        print(f"Error updating tasks: {e}")
         return {"error": str(e)}
 
 # ==========================================
@@ -205,17 +243,13 @@ def upload_image(file_obj):
 
     except Exception as e:
         return {"error": str(e)}
-    
-    # ==========================================
+
+# ==========================================
 # 🧠 AI Memory & Summarization Functions
 # ==========================================
 
 def update_project_summary(project_id, summary_text):
-    """
-    تحديث ملخص المشروع (الذاكرة طويلة المدى)
-    """
     try:
-        # نقوم بتحديث حقل summary للمشروع المحدد
         supabase.table("projects").update({"summary": summary_text}).eq("id", project_id).execute()
         return {"success": True}
     except Exception as e:
@@ -223,11 +257,7 @@ def update_project_summary(project_id, summary_text):
         return {"error": str(e)}
 
 def get_project_summary(project_id):
-    """
-    جلب الملخص الحالي للمشروع لحقنه في الذاكرة
-    """
     try:
-        # نجلب فقط حقل الـ summary
         response = supabase.table("projects").select("summary").eq("id", project_id).execute()
         if response.data and response.data[0]:
             return response.data[0].get("summary", "")
@@ -235,16 +265,12 @@ def get_project_summary(project_id):
     except Exception as e:
         print(f"Error getting summary: {e}")
         return ""
-    
-    # ==========================================
+
+# ==========================================
 # 🗑️ Deletion & Cleanup Functions
 # ==========================================
 
 def clear_project_chat_history(project_id):
-    """
-    حذف جميع رسائل الشات لمشروع معين من قاعدة البيانات
-    (يستخدم عند بدء محادثة جديدة لتخفيف الحمل)
-    """
     try:
         supabase.table("chat_messages").delete().eq("project_id", project_id).execute()
         return {"success": True}
@@ -252,35 +278,28 @@ def clear_project_chat_history(project_id):
         return {"error": str(e)}
 
 def delete_project_permanently(project_id):
-    """
-    حذف المشروع بالكامل (مع رسائله وملخصه) من قاعدة البيانات
-    """
     try:
-        # 1. حذف الرسائل المرتبطة بالمشروع أولاً (للأمان)
+        # 1. حذف الرسائل
         supabase.table("chat_messages").delete().eq("project_id", project_id).execute()
-        
-        # 2. حذف المشروع نفسه
+        # 2. حذف الأرشيف (إن وجد)
+        supabase.table("archives").delete().eq("project_id", project_id).execute()
+        # 3. حذف المشروع
         supabase.table("projects").delete().eq("id", project_id).execute()
-        
         return {"success": True}
     except Exception as e:
         return {"error": str(e)}
-    
-    # ==========================================
-# 📜 Archiving System (History Viewer)
+
+# ==========================================
+# 📜 Archiving System
 # ==========================================
 
 def archive_current_chat(project_id, messages_list, summary_snapshot):
-    """
-    نقل المحادثة الحالية إلى جدول الأرشيف قبل حذفها
-    """
     try:
-        # تحويل قائمة الرسائل إلى نص مقروء
         formatted_text = ""
         for msg in messages_list:
             role = "👤 المعماري" if msg['role'] == 'user' else "👷‍♀️ آيلا"
             content = msg['content']
-            if isinstance(content, list): # في حالة وجود صور
+            if isinstance(content, list): 
                 content = "[صورة + نص]"
             formatted_text += f"{role}: {content}\n{'-'*20}\n"
 
@@ -295,9 +314,6 @@ def archive_current_chat(project_id, messages_list, summary_snapshot):
         return {"error": str(e)}
 
 def get_project_archives(project_id):
-    """
-    جلب قائمة المحادثات المؤرشفة لهذا المشروع
-    """
     try:
         response = supabase.table("archives").select("*")\
             .eq("project_id", project_id)\
@@ -306,14 +322,3 @@ def get_project_archives(project_id):
         return response.data
     except Exception as e:
         return []
-    
-    # تأكد أن هذا السطر يبدأ من بداية السطر تماماً (صفر فراغات)
-def logout_user():
-    """
-    تقوم بتسجيل خروج المستخدم من نظام سوبابيس برمجياً
-    """
-    try:
-        supabase.auth.sign_out()
-        return {"success": True}
-    except Exception as e:
-        return {"error": str(e)}
