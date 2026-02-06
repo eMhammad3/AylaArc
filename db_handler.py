@@ -191,9 +191,14 @@ def save_message(project_id, role, content, image_url=None):
             "content": content,
             "image_url": image_url
         }
-        supabase.table("chat_messages").insert(data).execute()
+        # التعديل هنا: نخزن نتيجة التنفيذ في متغير res ونرجع الـ id
+        res = supabase.table("chat_messages").insert(data).execute()
+        if res.data:
+            return res.data[0]['id'] # نرجع الهوية الجديدة
+        return None
     except Exception as e:
         print(f"Error saving message: {e}")
+        return None
 
 def get_project_messages(project_id):
     try:

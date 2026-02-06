@@ -13,6 +13,8 @@ st.set_page_config(
 
 # 2. تهيئة الذاكرة والمراحل (النسخة الذكية مع الاستعادة 🧠)
 if 'app_stage' not in st.session_state:
+    if 'upload_key' not in st.session_state:
+                 st.session_state.upload_key = "uploader_1"
     
     # --- 1. محاولة الاستعادة من الرابط (Auto-Login Logic) ---
     # نفحص إذا كان هناك توكن في الرابط
@@ -1115,7 +1117,7 @@ elif st.session_state.app_stage == 'main_chat':
                 </p>
             </div>
             <div style="text-align: left; opacity: 0.5;">
-                <span style="font-size: 0.8rem; color: #fca311;">AYLA ARC SYSTEM v2.5</span>
+                <span style="font-size: 0.8rem; color: #fca311;">AYLA ARC SYSTEM v3.0</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -1203,24 +1205,35 @@ elif st.session_state.app_stage == 'main_chat':
                     c1, c2, c3 = st.columns([0.05, 0.05, 0.9])
                     with c1:
                         st.markdown('<div class="tiny-btn">', unsafe_allow_html=True)
-                        if st.button("❌", key=f"del_{i}"):
-                            msg_to_del = st.session_state.messages[i]
-                            if "db_id" in msg_to_del:
-                                db_handler.delete_message(msg_to_del["db_id"])
-                            st.session_state.messages = st.session_state.messages[:i]
-                            st.rerun()
-                        st.markdown('</div>', unsafe_allow_html=True)
-                    with c2:
-                        st.markdown('<div class="tiny-btn">', unsafe_allow_html=True)
-                        if st.button("✏️", key=f"edit_btn_{i}"):
-                            st.session_state.edit_index = i
-                            st.rerun()
+                        # ========================================================
+                    # 🛠️ تصحيح زر الحذف: يحذف رسالتك + رد الآيلا من الداتابيس
+                    # ========================================================
+                    if st.button("❌", key=f"del_{i}"):
+                        # 1. تحديد الرسالة الحالية (رسالتك)
+                        msg_to_del = st.session_state.messages[i]
+
+                        # 2. 🔥 الخطوة الجديدة: البحث عن رد آيلا المرتبط وحذفه
+                        # نتأكد أن هناك رسالة تالية، وأنها فعلاً من "assistant"
+                        if i + 1 < len(st.session_state.messages):
+                            next_msg = st.session_state.messages[i+1]
+                            if next_msg['role'] == 'assistant' and "db_id" in next_msg:
+                                # نحذف رد الآيلا من سوبابيس
+                                db_handler.delete_message(next_msg["db_id"])
+
+                        # 3. حذف رسالتك أنتِ من سوبابيس
+                        if "db_id" in msg_to_del:
+                            db_handler.delete_message(msg_to_del["db_id"])
+
+                        # 4. تحديث الشاشة (حذف ما تبقى محلياً)
+                        st.session_state.messages = st.session_state.messages[:i]
+                        st.rerun()
                         st.markdown('</div>', unsafe_allow_html=True)
 
         # --- منطقة الإدخال ---
         with st.popover("📎", use_container_width=False):
             st.caption("📂 رفع ملفات المشروع")
-            uploaded_file = st.file_uploader("", type=["png", "jpg", "jpeg"], key="chat_uploader")
+            # التعديل: تفعيل accept_multiple_files
+            uploaded_files = st.file_uploader("", type=["png", "jpg", "jpeg"], key=st.session_state.upload_key, accept_multiple_files=True)
 
         if 'trigger_generation' not in st.session_state:
             st.session_state.trigger_generation = False
@@ -1230,25 +1243,39 @@ elif st.session_state.app_stage == 'main_chat':
         if prompt:
             with st.chat_message("user", avatar="👷‍♀️"):
                 st.markdown('<div class="user-marker"></div>', unsafe_allow_html=True)
-                if uploaded_file: st.image(uploaded_file, width=300)
+                # 1. عرض الصور (Streamlit ذكي ويعرض القائمة كاملة تلقائياً)
+                if uploaded_files: 
+                    st.image(uploaded_files, width=300)
                 st.markdown(prompt)
             
+            # 2. منطق الرفع للسحابة
             image_url = None
-            if uploaded_file:
-                with st.spinner("جاري رفع المخطط للسحابة..."):
-                    up_res = db_handler.upload_image(uploaded_file)
-                    if "success" in up_res:
-                        image_url = up_res["url"]
-                    else:
-                        st.error(f"⚠️ فشل رفع الصورة: {up_res.get('error')}")
+            # 2. منطق الرفع للسحابة (التعديل لحفظ الكل)
+            image_urls = [] # مصفوفة لتجميع كل الروابط
+            if uploaded_files:
+                with st.spinner("جاري رفع كل المخططات..."):
+                    for f in uploaded_files:
+                        up_res = db_handler.upload_image(f)
+                        if "success" in up_res:
+                            image_urls.append(up_res["url"]) # إضافة كل رابط للقائمة
             
-            st.session_state.messages.append({"role": "user", "content": prompt, "image": uploaded_file})
+            # 3. الحفظ في الذاكرة الحية (للمعاينة الفورية)
+            st.session_state.messages.append({
+                "role": "user", 
+                "content": prompt, 
+                "image": uploaded_files 
+            })
             
+            # 4. الحفظ في الداتابيس (نرسل قائمة الروابط كاملة)
             if 'id' in st.session_state.project_data:
                 current_pid = st.session_state.project_data['id']
-                db_handler.save_message(current_pid, "user", prompt, image_url) 
+                # نمرر image_urls (القائمة) بدلاً من رابط واحد
+                new_db_id = db_handler.save_message(current_pid, "user", prompt, image_urls) 
+                if new_db_id:
+                    st.session_state.messages[-1]["db_id"] = new_db_id
             
             st.session_state.trigger_generation = True
+            st.session_state.upload_key = str(time.time())
 
         if st.session_state.trigger_generation:
             last_msg = st.session_state.messages[-1]
@@ -1306,7 +1333,11 @@ elif st.session_state.app_stage == 'main_chat':
                 
                 if 'id' in st.session_state.project_data:
                     current_pid = st.session_state.project_data['id']
-                    db_handler.save_message(current_pid, "assistant", full_res)
+                    # نأخذ الـ id الراجع لرد آيلا
+                    assistant_db_id = db_handler.save_message(current_pid, "assistant", full_res)
+                    # نلصقه بالرسالة الأخيرة (رد آيلا) في الذاكرة
+                    if assistant_db_id:
+                        st.session_state.messages[-1]["db_id"] = assistant_db_id
             
             elif not full_res:
                 st.warning("⚠️ لم يتم استلام رد من النموذج.")
