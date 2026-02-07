@@ -39,7 +39,7 @@ if 'app_stage' not in st.session_state:
 # ب) منطق "الصبر الاستراتيجي" (ما نطلعچ إلا نتمأكد)
 if st.session_state.user is None and st.session_state.app_stage == 'check_auth':
     # ننتظر شوية حتى يلحق المتصفح يرد
-    time.sleep(0.8) 
+    time.sleep(2.0) 
     
     # نجلب التوكن من كل مكان ممكن
     cookie_token = cookie_manager.get(cookie="ayla_auth_token")
