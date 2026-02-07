@@ -1,8 +1,19 @@
 import streamlit as st
 import json
-import core_logic  # العقل المدبر
+import core_logic
 import time
 import db_handler
+import datetime
+import extra_streamlit_components as stx
+
+# 1. إعدادات الصفحة
+import streamlit as st
+import json
+import core_logic
+import time
+import db_handler
+import datetime
+import extra_streamlit_components as stx
 
 # 1. إعدادات الصفحة
 st.set_page_config(
@@ -12,84 +23,75 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. تهيئة الذاكرة والمراحل (النسخة الذكية مع الاستعادة 🧠)
+# 2. مدير الكوكيز (بدون كاش لتجنب اللون الأصفر 🟡)
+cookie_manager = stx.CookieManager()
+
+# -----------------------------------------------------------------------------
+# 🛡️ نظام حماية الجلسة (The Persistent Shield v2)
+# -----------------------------------------------------------------------------
+
+# أ) تهيئة الذاكرة إذا كانت مفقودة
+if 'user' not in st.session_state:
+    st.session_state.user = None
 if 'app_stage' not in st.session_state:
-    if 'upload_key' not in st.session_state:
-                 st.session_state.upload_key = "uploader_1"
-    
-    # --- 1. محاولة الاستعادة من الرابط (Auto-Login Logic) ---
-    # نفحص إذا كان هناك توكن في الرابط
-    token_in_url = st.query_params.get("auth_token")
-    
-    if token_in_url and 'user' not in st.session_state:
-        with st.spinner("جاري استعادة جلستك..."):
-            # نحاول الدخول باستخدام التوكن
-            res = db_handler.login_with_token(token_in_url)
-            if res.get("success"):
-                st.session_state.user = res["user"]
-            else:
-                # إذا التوكن خربان، نمسحه من الرابط
-                st.query_params.clear()
-    
-    # --- 2. المنطق المعتاد ---
-    active_user = None 
-    if 'user' in st.session_state:
-        active_user = st.session_state.user
+    st.session_state.app_stage = 'check_auth' # حالة فحص الهوية
 
-    if active_user:
-        # نتأكد أن التوكن موجود في الرابط دائماً للحفاظ على الجلسة عند الريلود
-        try:
-            # نجلب التوكن الحالي
-            current_token = active_user.session.access_token if hasattr(active_user, 'session') else None
-            # ملاحظة: أحياناً object user لا يحتوي session مباشرة، لذا نعتمد على auth response
-            # للتبسيط، سنعتمد على أن الدخول يضع التوكن، لكن هنا سنثبت الوجود
-            pass 
-        except: pass
+# ب) منطق "الصبر الاستراتيجي" (ما نطلعچ إلا نتمأكد)
+if st.session_state.user is None and st.session_state.app_stage == 'check_auth':
+    # ننتظر شوية حتى يلحق المتصفح يرد
+    time.sleep(0.8) 
+    
+    # نجلب التوكن من كل مكان ممكن
+    cookie_token = cookie_manager.get(cookie="ayla_auth_token")
+    url_token = st.query_params.get("auth_token")
+    
+    final_token = cookie_token if cookie_token else url_token
 
-        st.session_state.user = active_user
-        
-        query_params = st.query_params
-        pid = query_params.get("pid")
-        
-        if pid:
-            with st.spinner("جاري استعادة جلسة العمل..."):
-                p = db_handler.get_project_by_id(pid)
-                if p:
-                    st.session_state.project_data = {
-                        "id": p['id'],
-                        "name": p['name'],
-                        "type": p['project_type'],
-                        "site": p['site_context'],
-                        "requirements": p['requirements']
-                    }
-                    st.session_state.messages = db_handler.get_project_messages(pid)
-                    st.session_state.app_stage = 'main_chat'
-                else:
-                    st.session_state.app_stage = 'project_landing'
-        else:
+    if final_token:
+        # فحص التوكن مع سوبابيس
+        res = db_handler.login_with_token(final_token)
+        if res.get("success"):
+            st.session_state.user = res["user"]
             st.session_state.app_stage = 'project_landing'
             
-        try:
-            profile_res = db_handler.supabase.table("profiles").select("*").eq("id", active_user.id).execute()
-            if profile_res.data:
-                prof = profile_res.data[0]
-                st.session_state.project_data["user_real_name"] = prof.get("real_name", "Architect")
-                st.session_state.project_data["user_nickname"] = prof.get("nickname", "Arch")
-        except: pass
+            # إذا التوكن من الرابط، نثبته بالكوكيز وننظفه
+            if url_token:
+                cookie_manager.set("ayla_auth_token", url_token, expires_at=datetime.datetime.now() + datetime.timedelta(days=7))
+                st.query_params.clear()
+        else:
+            st.session_state.app_stage = 'profile'
     else:
+        # إذا انتظرنا وماكو شي، إذن فعلاً لازم تسجيل دخول
         st.session_state.app_stage = 'profile'
 
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
-if 'project_data' not in st.session_state:
-    st.session_state.project_data = {}
-if 'edit_index' not in st.session_state:
-    st.session_state.edit_index = None
-# متغير لتخزين حالة فتح القفل للمرحلة الثانية
-if 'phase2_unlocked' not in st.session_state:
-    st.session_state.phase2_unlocked = False
-if 'active_phase_idx' not in st.session_state:
-    st.session_state.active_phase_idx = 0
+# ج) استعادة المشروع النشط في حال الريلود
+if st.session_state.user and st.session_state.app_stage != 'profile':
+    pid = st.query_params.get("pid")
+    if pid and 'project_data' not in st.session_state:
+        st.session_state.project_data = {}
+        
+    if pid and st.session_state.project_data.get('id') != pid:
+        p = db_handler.get_project_by_id(pid)
+        if p:
+            st.session_state.project_data = p
+            st.session_state.messages = db_handler.get_project_messages(pid)
+            st.session_state.app_stage = 'main_chat'
+            try:
+                prof = db_handler.supabase.table("profiles").select("*").eq("id", st.session_state.user.id).execute()
+                if prof.data:
+                    st.session_state.project_data["user_real_name"] = prof.data[0].get("real_name")
+                    st.session_state.project_data["user_nickname"] = prof.data[0].get("nickname")
+            except: pass
+
+# د) تهيئة بقية المتغيرات لضمان عدم ظهور الخطأ الأحمر 🔴
+if 'messages' not in st.session_state: st.session_state.messages = []
+if 'project_data' not in st.session_state: st.session_state.project_data = {}
+if 'edit_index' not in st.session_state: st.session_state.edit_index = None
+if 'phase2_unlocked' not in st.session_state: st.session_state.phase2_unlocked = False
+if 'active_phase_idx' not in st.session_state: st.session_state.active_phase_idx = 0
+if 'upload_key' not in st.session_state: st.session_state.upload_key = str(time.time())
+
+# تعريف المراحل (باقي كودك القديم)
 
 # تعريف المراحل (نسخة مختصرة وأنيقة للواجهة)
 phases = {
@@ -638,20 +640,15 @@ if st.session_state.app_stage == 'profile':
                 
                 if submitted:
                     if email and password:
-                        with st.spinner("جاري الاتصال بالسيرفر..."):
+                        with st.spinner("جاري الاتصال..."):
                             result = db_handler.login_user(email, password)
                             if "success" in result:
-                                st.success("تم تسجيل الدخول بنجاح!")
                                 st.session_state.user = result["user"]
-                                
+                                # 🍪 أهم سطر: حفظ الدخول لمدة 7 أيام
                                 session = db_handler.supabase.auth.get_session()
                                 if session:
-                                    st.query_params["auth_token"] = session.access_token
+                                    cookie_manager.set("ayla_auth_token", session.access_token, expires_at=datetime.datetime.now() + datetime.timedelta(days=7))
                                 
-                                profile = result["profile"]
-                                st.session_state.project_data["user_real_name"] = profile.get("real_name", "Architect")
-                                st.session_state.project_data["user_nickname"] = profile.get("nickname", "Arch")
-                                time.sleep(1)
                                 st.session_state.app_stage = 'project_landing'
                                 st.rerun()
                             else:
@@ -808,6 +805,7 @@ elif st.session_state.app_stage == 'project_landing':
     with col_l:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("تسجيل الخروج", key="logout_top", type="primary", use_container_width=True):
+            cookie_manager.delete("ayla_auth_token") 
             st.session_state.clear()
             st.query_params.clear()
             db_handler.logout_user()
@@ -1100,6 +1098,7 @@ elif st.session_state.app_stage == 'main_chat':
                 st.rerun()
 
         if st.button("تسجيل خروج", type="secondary", use_container_width=True):
+            cookie_manager.delete("ayla_auth_token")
             st.session_state.clear()
             st.query_params.clear() 
             db_handler.logout_user()
@@ -1198,8 +1197,18 @@ elif st.session_state.app_stage == 'main_chat':
                     if role == "user": st.markdown('<div class="user-marker"></div>', unsafe_allow_html=True)
                     else: st.markdown('<div class="assistant-marker"></div>', unsafe_allow_html=True)
                     
+                    # --- 🖼️ عرض الصور بنظام الشبكة (Grid) ---
                     if message.get("image"):
-                        st.image(message["image"], width=300)
+                        imgs = message["image"]
+                        # إذا كانت صورة واحدة، نعرضها عادي
+                        if not isinstance(imgs, list):
+                            st.image(imgs, width=300)
+                        else:
+                            # إذا مجموعة صور، نسوي أعمدة (مثلاً 3 أعمدة)
+                            cols = st.columns(min(len(imgs), 3)) 
+                            for idx, img_file in enumerate(imgs):
+                                with cols[idx % 3]:
+                                    st.image(img_file, use_container_width=True)
                     st.markdown(message["content"])
                 
                 if role == "user" and i == last_user_index:
@@ -1253,8 +1262,14 @@ elif st.session_state.app_stage == 'main_chat':
             with st.chat_message("user", avatar="👷‍♀️"):
                 st.markdown('<div class="user-marker"></div>', unsafe_allow_html=True)
                 # 1. عرض الصور (Streamlit ذكي ويعرض القائمة كاملة تلقائياً)
-                if uploaded_files: 
-                    st.image(uploaded_files, width=300)
+                # --- 🖼️ عرض المعاينة الفورية للصور المرفوعة ---
+                if uploaded_files:
+                    num_imgs = len(uploaded_files)
+                    # نسوي نظام أعمدة ذكي (ما يتجاوز 3 بالسطر الواحد)
+                    cols = st.columns(min(num_imgs, 3))
+                    for idx, f in enumerate(uploaded_files):
+                        with cols[idx % 3]:
+                            st.image(f, use_container_width=True, caption=f"رسمة {idx+1}")
                 st.markdown(prompt)
             
             # 2. منطق الرفع للسحابة

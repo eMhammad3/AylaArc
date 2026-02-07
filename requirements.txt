@@ -6,3 +6,4 @@ google-generativeai
 Pillow
 watchdog
 streamlit>=1.31.0
+extra-streamlit-components
