@@ -327,3 +327,34 @@ def get_project_archives(project_id):
         return response.data
     except Exception as e:
         return []
+    
+    # ==========================================
+# 🧠 FACT EXTRACTION MEMORY (NEW ADDITION)
+# ==========================================
+
+def update_project_facts(project_id, facts_dict):
+    """
+    تحديث حقائق المشروع الهندسية (JSON)
+    facts_dict: قاموس بايثون يحتوي على المعلومات
+    """
+    try:
+        # Supabase يحول الـ Dict إلى JSONB تلقائياً
+        supabase.table("projects").update({"project_facts": facts_dict}).eq("id", project_id).execute()
+        return {"success": True}
+    except Exception as e:
+        print(f"Error updating facts: {e}")
+        return {"error": str(e)}
+
+def get_project_facts(project_id):
+    """
+    جلب الحقائق الهندسية كقاموس
+    """
+    try:
+        response = supabase.table("projects").select("project_facts").eq("id", project_id).execute()
+        if response.data and response.data[0]:
+            # نرجع البيانات أو قاموس فارغ إذا كانت null
+            return response.data[0].get("project_facts") or {}
+        return {}
+    except Exception as e:
+        print(f"Error getting facts: {e}")
+        return {}

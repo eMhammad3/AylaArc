@@ -1,4 +1,5 @@
 import streamlit as st
+import json
 import core_logic  # العقل المدبر
 import time
 import db_handler
@@ -1230,10 +1231,18 @@ elif st.session_state.app_stage == 'main_chat':
                         st.markdown('</div>', unsafe_allow_html=True)
 
         # --- منطقة الإدخال ---
+        # --- منطقة الإدخال المصححة ---
         with st.popover("📎", use_container_width=False):
             st.caption("📂 رفع ملفات المشروع")
-            # التعديل: تفعيل accept_multiple_files
-            uploaded_files = st.file_uploader("", type=["png", "jpg", "jpeg"], key=st.session_state.upload_key, accept_multiple_files=True)
+            
+            # ✅ التصحيح: وضعنا اسماً للزر وأخفيناه بـ label_visibility
+            uploaded_files = st.file_uploader(
+                "Upload Image",  # نص وهمي لإسكات الخطأ
+                type=["png", "jpg", "jpeg"], 
+                key=st.session_state.upload_key, 
+                accept_multiple_files=True,
+                label_visibility="collapsed" # إخفاء النص
+            )
 
         if 'trigger_generation' not in st.session_state:
             st.session_state.trigger_generation = False
@@ -1303,46 +1312,63 @@ elif st.session_state.app_stage == 'main_chat':
                         status.update(label="Done", state="complete")
                     except Exception as e:
                         st.error(f"Error: {e}")
-            
-           # --- منطقة معالجة الرد النهائي ---
+        
+            # --- منطقة معالجة الرد المدرعة (Safe & Robust) ---
             if full_res and full_res.strip():
                 
-            # 🕵️‍♂️ المحرك الذكي للأقفال (من المرحلة 1 إلى 8)
-                for phase_num in range(1, 9):
-                    unlock_key = f"[UNLOCK_PHASE_{phase_num}]"
-                    
-                    if unlock_key in full_res:
-                        # 1. تنظيف النص لكي لا يرى الطالب الكود البرمجي
-                        full_res = full_res.replace(unlock_key, "")
-                        
-                        # 2. تحديث قاعدة البيانات (سوبابيس) لضمان عدم ضياع الإنجاز
-                        if 'id' in st.session_state.project_data:
-                            current_pid = st.session_state.project_data['id']
-                            db_handler.update_project_phase(current_pid, phase_num)
-                        
-                        # 3. تحديث الجلسة الحالية لفتح الزر فوراً
-                        st.session_state.project_data['unlocked_phase'] = phase_num
-                        
-                        # 4. رسالة تشجيعية تظهر لإسراء
-                        phase_display_name = list(phases.keys())[phase_num]
-                        st.toast(f"🔓 مبروك! آيلا فتحت لكِ: {phase_display_name}", icon="✨")
-                        break # نخرج من اللوب بمجرد إيجاد المفتاح
+                # أ) معالجة الكواليس (بدون ما توقف العرض)
+                try:
+                    # 1. صيد الحقائق (JSON Facts)
+                    import json
+                    if "[FACTS_JSON]" in full_res:
+                        start_marker = "[FACTS_JSON]"
+                        end_marker = "[/FACTS_JSON]"
+                        if end_marker in full_res:
+                            # قص النص
+                            s_idx = full_res.find(start_marker) + len(start_marker)
+                            e_idx = full_res.find(end_marker)
+                            json_txt = full_res[s_idx:e_idx].strip()
+                            
+                            # محاولة التخزين (بصمت)
+                            try:
+                                facts_dict = json.loads(json_txt)
+                                if 'id' in st.session_state.project_data:
+                                    pid = st.session_state.project_data['id']
+                                    db_handler.update_project_facts(pid, facts_dict)
+                                    st.session_state.project_data['project_facts'] = facts_dict
+                            except Exception as db_err:
+                                print(f"⚠️ JSON Save Error: {db_err}")
 
-                # 2. الكود القديم: حفظ وعرض الرسالة (بعد التنظيف) 💾
+                            # تنظيف الرد للعرض
+                            full_res = full_res[:full_res.find(start_marker)] + full_res[e_idx+len(end_marker):]
+
+                    # 2. صيد الأقفال (Unlocking Phase)
+                    for i in range(1, 9):
+                        key = f"[UNLOCK_PHASE_{i}]"
+                        if key in full_res:
+                            full_res = full_res.replace(key, "") # تنظيف
+                            if 'id' in st.session_state.project_data:
+                                db_handler.update_project_phase(st.session_state.project_data['id'], i)
+                            st.session_state.project_data['unlocked_phase'] = i
+                            st.toast(f"🔓 تم فتح المرحلة {i} بنجاح!", icon="✨")
+                            break
+
+                except Exception as e:
+                    # إذا صار أي خطأ بالمعالجة، نطبع الخطأ بالكونسول ونكمل عرض الرد
+                    print(f"⚠️ Processing Error (Non-Fatal): {e}")
+
+                # ب) العرض والحفظ النهائي (هذا السطر راح يشتغل 100% هسه)
                 st.session_state.messages.append({"role": "assistant", "content": full_res})
                 
                 if 'id' in st.session_state.project_data:
-                    current_pid = st.session_state.project_data['id']
-                    # نأخذ الـ id الراجع لرد آيلا
-                    assistant_db_id = db_handler.save_message(current_pid, "assistant", full_res)
-                    # نلصقه بالرسالة الأخيرة (رد آيلا) في الذاكرة
-                    if assistant_db_id:
-                        st.session_state.messages[-1]["db_id"] = assistant_db_id
-            
-            elif not full_res:
-                st.warning("⚠️ لم يتم استلام رد من النموذج.")
-            
-            # إنهاء التوليد وإعادة التشغيل
-            st.session_state.trigger_generation = False
+                    # حفظ الرسالة بالنص الصافي
+                    msg_id = db_handler.save_message(st.session_state.project_data['id'], "assistant", full_res)
+                    if msg_id:
+                        st.session_state.messages[-1]["db_id"] = msg_id
 
+            elif not full_res:
+                 st.warning("⚠️ لم يصل رد من السيرفر. (تحقق من الموديل أو الرصيد)")
+
+            # إعادة التشغيل
+            st.session_state.trigger_generation = False
             st.rerun()
