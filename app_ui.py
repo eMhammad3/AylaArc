@@ -95,7 +95,7 @@ if 'upload_key' not in st.session_state: st.session_state.upload_key = str(time.
 
 # تعريف المراحل (نسخة مختصرة وأنيقة للواجهة)
 phases = {
-    "0️⃣ المحادثة والإعداد | SETUP": "0️⃣ General Chat & Setup",
+    "0️⃣ برمجة المشروع | PROGRAMMING": "0️⃣ Project Programming",
     "1️⃣ تحليل الموقع | SITE ANALYSIS": "1️⃣ Site & Research (Active)",
     "2️⃣ الفكرة والتوزيع | CON&ZONINIG": "2️⃣ Concept & Zoning",
     "3️⃣ السكيتشات | SKETCHES": "3️⃣ Sketches & Freehand",
@@ -1386,4 +1386,5 @@ elif st.session_state.app_stage == 'main_chat':
 
             # إعادة التشغيل
             st.session_state.trigger_generation = False
+
             st.rerun()
