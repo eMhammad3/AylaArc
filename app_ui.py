@@ -7,15 +7,6 @@ import datetime
 import extra_streamlit_components as stx
 
 # 1. إعدادات الصفحة
-import streamlit as st
-import json
-import core_logic
-import time
-import db_handler
-import datetime
-import extra_streamlit_components as stx
-
-# 1. إعدادات الصفحة
 st.set_page_config(
     page_title="AylaArc | المعمارية آيلا",
     page_icon="👷‍♀️",
@@ -23,54 +14,80 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. مدير الكوكيز (بدون كاش لتجنب اللون الأصفر 🟡)
-cookie_manager = stx.CookieManager()
+# -----------------------------------------------------------------------------
+# 🛡️ الجزء الأول: تهيئة الذاكرة (إصلاح الـ AttributeError للأبد)
+# -----------------------------------------------------------------------------
+if 'user' not in st.session_state: st.session_state.user = None
+if 'app_stage' not in st.session_state: st.session_state.app_stage = 'check_auth'
+if 'messages' not in st.session_state: st.session_state.messages = []
+if 'project_data' not in st.session_state: st.session_state.project_data = {}
+if 'upload_key' not in st.session_state: st.session_state.upload_key = str(time.time())
+if 'active_phase_idx' not in st.session_state: st.session_state.active_phase_idx = 0
+if 'phase2_unlocked' not in st.session_state: st.session_state.phase2_unlocked = False
+
+# 2. مدير الكوكيز
+cookie_manager = stx.CookieManager(key="ayla_local_manager")
 
 # -----------------------------------------------------------------------------
-# 🛡️ نظام حماية الجلسة (The Persistent Shield v2)
+# 🛡️ الجزء الثاني: نظام الاستعادة الذكي (The Retry Logic v2)
 # -----------------------------------------------------------------------------
 
-# أ) تهيئة الذاكرة إذا كانت مفقودة
-if 'user' not in st.session_state:
-    st.session_state.user = None
-if 'app_stage' not in st.session_state:
-    st.session_state.app_stage = 'check_auth' # حالة فحص الهوية
-
-# ب) منطق "الصبر الاستراتيجي" (ما نطلعچ إلا نتمأكد)
+# نتأكد أننا في مرحلة فحص الهوية
 if st.session_state.user is None and st.session_state.app_stage == 'check_auth':
-    # ننتظر شوية حتى يلحق المتصفح يرد
-    time.sleep(2.0) 
     
-    # نجلب التوكن من كل مكان ممكن
-    cookie_token = cookie_manager.get(cookie="ayla_auth_token")
-    url_token = st.query_params.get("auth_token")
+    # 1. محاولة القراءة الأولى
+    cookies = cookie_manager.get_all()
     
-    final_token = cookie_token if cookie_token else url_token
+    # ننتظر الكوكيز إذا كانت القائمة فارغة (لأن الكومبوننت يتأخر بالتحميل)
+    if not cookies:
+        time.sleep(0.5)
+        cookies = cookie_manager.get_all()
+        
+    acc = cookies.get("ayla_access_token") if cookies else None
+    ref = cookies.get("ayla_refresh_token") if cookies else None
 
-    if final_token:
-        # فحص التوكن مع سوبابيس
-        res = db_handler.login_with_token(final_token)
+    # فحص الرابط (لأنه أسرع)
+    url_tok = st.query_params.get("auth_token")
+    
+    # الأولوية: الرابط ثم الكوكيز
+    final_acc = url_tok if url_tok else acc
+    
+    if final_acc:
+        # محاولة الدخول
+        res = db_handler.login_with_token(final_acc, ref) # تأكد أن دالة الهاندلر تقبل الرفرش توكن
+        
         if res.get("success"):
             st.session_state.user = res["user"]
             st.session_state.app_stage = 'project_landing'
             
-            # إذا التوكن من الرابط، نثبته بالكوكيز وننظفه
-            if url_token:
-                cookie_manager.set("ayla_auth_token", url_token, expires_at=datetime.datetime.now() + datetime.timedelta(days=7))
+            # إذا جايين من رابط، نثبت التوكن بالكوكيز فوراً
+            if url_tok:
+                exp = datetime.datetime.now() + datetime.timedelta(days=7)
+                
+                cookie_manager.set("ayla_access_token", final_acc, expires_at=exp, key="set_from_url")
+                
                 st.query_params.clear()
+                time.sleep(1) # نعطي وقت للكتابةry_params.clear()
+                time.sleep(1) # نعطي وقت للكتابة
+                
+            st.rerun()
         else:
+            # التوكن منتهي أو غير صالح
             st.session_state.app_stage = 'profile'
     else:
-        # إذا انتظرنا وماكو شي، إذن فعلاً لازم تسجيل دخول
-        st.session_state.app_stage = 'profile'
+        # لا يوجد توكن لا بالرابط ولا بالكوكيز
+        # نعطي فرصة أخيرة (محاولة صبر إضافية) قبل إعلان الفشل
+        if 'retry_cookie_read' not in st.session_state:
+             st.session_state['retry_cookie_read'] = True
+             time.sleep(1)
+             st.rerun()
+        else:
+             st.session_state.app_stage = 'profile'
 
-# ج) استعادة المشروع النشط في حال الريلود
+# استعادة المشروع (نفس المنطق القديم)
 if st.session_state.user and st.session_state.app_stage != 'profile':
     pid = st.query_params.get("pid")
-    if pid and 'project_data' not in st.session_state:
-        st.session_state.project_data = {}
-        
-    if pid and st.session_state.project_data.get('id') != pid:
+    if pid and (not st.session_state.get('project_data') or st.session_state.project_data.get('id') != pid):
         p = db_handler.get_project_by_id(pid)
         if p:
             st.session_state.project_data = p
@@ -82,6 +99,8 @@ if st.session_state.user and st.session_state.app_stage != 'profile':
                     st.session_state.project_data["user_real_name"] = prof.data[0].get("real_name")
                     st.session_state.project_data["user_nickname"] = prof.data[0].get("nickname")
             except: pass
+
+# (هنا يبدأ كود الـ CSS مالتك...)
 
 # د) تهيئة بقية المتغيرات لضمان عدم ظهور الخطأ الأحمر 🔴
 if 'messages' not in st.session_state: st.session_state.messages = []
@@ -95,7 +114,7 @@ if 'upload_key' not in st.session_state: st.session_state.upload_key = str(time.
 
 # تعريف المراحل (نسخة مختصرة وأنيقة للواجهة)
 phases = {
-    "0️⃣ المحادثة والإعداد | SETUP": "0️⃣ General Chat & Setup",
+    "0️⃣ برمجة المشروع | PROGRAMMING": "0️⃣ Project Programming",
     "1️⃣ تحليل الموقع | SITE ANALYSIS": "1️⃣ Site & Research (Active)",
     "2️⃣ الفكرة والتوزيع | CON&ZONINIG": "2️⃣ Concept & Zoning",
     "3️⃣ السكيتشات | SKETCHES": "3️⃣ Sketches & Freehand",
@@ -513,6 +532,7 @@ st.markdown("""
             display: none !important;
         }
             
+            
     </style>
 """, unsafe_allow_html=True)
 
@@ -644,18 +664,35 @@ if st.session_state.app_stage == 'profile':
                             result = db_handler.login_user(email, password)
                             if "success" in result:
                                 st.session_state.user = result["user"]
-                                # 🍪 أهم سطر: حفظ الدخول لمدة 7 أيام
-                                session = db_handler.supabase.auth.get_session()
-                                if session:
-                                    cookie_manager.set("ayla_auth_token", session.access_token, expires_at=datetime.datetime.now() + datetime.timedelta(days=7))
+
+                            # إعداد التوكن
+                            acc_tok = result.get("access_token")
+                            ref_tok = result.get("refresh_token") # تأكد أنك تجيب الرفرش توكن من النتيجة إذا متاح
+
+                            if acc_tok:
+                                # 1. إعطاء التوكن عمر طويل (7 أيام)
+                                exp_date = datetime.datetime.now() + datetime.timedelta(days=7)
                                 
+                                # 2. إرسال أمر الكوكيز (بدون مفتاح key حتى لا يسبب تضارب)
+                                # حفظ الأكسس توكن بمفتاح فريد
+                                cookie_manager.set("ayla_access_token", acc_tok, expires_at=exp_date, key="login_acc_key")
+
+                                # حفظ الرفرش توكن بمفتاح فريد آخر
+                                if ref_tok:
+                                    cookie_manager.set("ayla_refresh_token", ref_tok, expires_at=exp_date, key="login_ref_key")
+                                
+                                # 3. تحديث المرحلة
                                 st.session_state.app_stage = 'project_landing'
+                                
+                                st.success("تم تسجيل الدخول بنجاح.. ")
+                                
+                                # 🔥 السحر هنا: ننتظر قليلاً حتى الجافاسكربت يلحق يكتب الكوكيز قبل الريلود
+                                time.sleep(1.5) 
                                 st.rerun()
                             else:
                                 st.error(f"خطأ: {result.get('error')}")
                     else:
                         st.warning("يرجى إدخال البريد وكلمة المرور.")
-
         # --- تاب إنشاء الحساب (النسخة الخاصة بأسراء) ---
         with tab2:
             # 1. الرسالة المخصصة (بستايل فخم)
@@ -743,7 +780,18 @@ if st.session_state.app_stage == 'profile':
                                        st.session_state.project_data["user_nickname"] = "سيرو"
                                        
                                        st.toast("تم تفعيل الحساب بنجاح! 🏛️", icon="✨")
+                                       # إرسال الكوكيز بعد التسجيل
+                                       session = db_handler.supabase.auth.get_session()
+                                       if session:
+                                           exp_date = datetime.datetime.now() + datetime.timedelta(days=7)
+                                           cookie_manager.set("ayla_access_token", session.access_token, expires_at=exp_date, key="signup_acc_key")
+
+                                       if session.refresh_token:
+                                           cookie_manager.set("ayla_refresh_token", session.refresh_token, expires_at=exp_date, key="signup_ref_key")
+
+                                       # 🔥 التمهل الاستراتيجي
                                        time.sleep(1.5)
+
                                        st.session_state.app_stage = 'project_landing'
                                        st.rerun()
                                    else:
@@ -804,11 +852,28 @@ elif st.session_state.app_stage == 'project_landing':
         """, unsafe_allow_html=True)
     with col_l:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("تسجيل الخروج", key="logout_top", type="primary", use_container_width=True):
-            cookie_manager.delete("ayla_auth_token") 
+        # في صفحة project_landing
+        if st.button("تسجيل الخروج", key="landing_logout_safe", type="secondary", use_container_width=True):
+            # 🤫 كود الصامت
+            st.markdown("""
+                <style>
+                    div[data-testid="stException"] { display: none !important; }
+                    div[data-testid="stAlert"] { display: none !important; }
+                </style>
+            """, unsafe_allow_html=True)
+
+            try:
+                past_date = datetime.datetime.now() - datetime.timedelta(days=1)
+                cookie_manager.set("ayla_access_token", "", expires_at=past_date, key="kill_top_acc")
+                cookie_manager.set("ayla_refresh_token", "", expires_at=past_date, key="kill_top_ref")
+            except:
+                pass
+            
             st.session_state.clear()
             st.query_params.clear()
             db_handler.logout_user()
+            
+            time.sleep(1)
             st.rerun()
 
     st.markdown("<hr style='border-color: rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
@@ -1097,11 +1162,29 @@ elif st.session_state.app_stage == 'main_chat':
                 st.session_state.app_stage = 'project_landing'
                 st.rerun()
 
-        if st.button("تسجيل خروج", type="secondary", use_container_width=True):
-            cookie_manager.delete("ayla_auth_token")
+        if st.button("تسجيل الخروج", type="secondary", use_container_width=True):
+            # 🤫 كود الصامت: نخفي صندوق الأخطاء فوراً
+            st.markdown("""
+                <style>
+                    div[data-testid="stException"] { display: none !important; }
+                    div[data-testid="stAlert"] { display: none !important; }
+                </style>
+            """, unsafe_allow_html=True)
+
+            # 🔨 طريقة المطرقة (الحذف بالكتابة فوقه)
+            try:
+                past_date = datetime.datetime.now() - datetime.timedelta(days=1)
+                cookie_manager.set("ayla_access_token", "", expires_at=past_date, key="kill_side_acc")
+                cookie_manager.set("ayla_refresh_token", "", expires_at=past_date, key="kill_side_ref")
+            except:
+                pass
+
+            # تنظيف
             st.session_state.clear()
-            st.query_params.clear() 
+            st.query_params.clear()
             db_handler.logout_user()
+            
+            time.sleep(1) # نعطيه ثانية يستوعب
             st.rerun()
 
     p_data = st.session_state.get('project_data', {})
@@ -1117,7 +1200,7 @@ elif st.session_state.app_stage == 'main_chat':
                 </p>
             </div>
             <div style="text-align: left; opacity: 0.5;">
-                <span style="font-size: 0.8rem; color: #fca311;">AYLA ARC SYSTEM v3.0</span>
+                <span style="font-size: 0.8rem; color: #fca311;">AYLA ARC SYSTEM v3.5</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -1218,25 +1301,33 @@ elif st.session_state.app_stage == 'main_chat':
                         # ========================================================
                     # 🛠️ تصحيح زر الحذف: يحذف رسالتك + رد الآيلا من الداتابيس
                     # ========================================================
-                    if st.button("❌", key=f"del_{i}"):
-                        # 1. تحديد الرسالة الحالية (رسالتك)
-                        msg_to_del = st.session_state.messages[i]
+                    # هذا الشرط يخلي الأزرار تطلع بس لآخر رسالة كتبها المستخدم
+                if role == "user" and i == last_user_index:
+                    c1, c2, c3 = st.columns([0.05, 0.05, 0.9])
+                    
+                    # 1. زر الحذف (موجود عندك)
+                    with c1:
+                        st.markdown('<div class="tiny-btn">', unsafe_allow_html=True)
+                        if st.button("❌", key=f"del_{i}"):
+                            # ... (نفس كود الحذف القديم اللي عندك) ...
+                            msg_to_del = st.session_state.messages[i]
+                            if i + 1 < len(st.session_state.messages):
+                                next_msg = st.session_state.messages[i+1]
+                                if next_msg['role'] == 'assistant' and "db_id" in next_msg:
+                                    db_handler.delete_message(next_msg["db_id"])
+                            if "db_id" in msg_to_del:
+                                db_handler.delete_message(msg_to_del["db_id"])
+                            st.session_state.messages = st.session_state.messages[:i]
+                            st.rerun()
+                        st.markdown('</div>', unsafe_allow_html=True)
 
-                        # 2. 🔥 الخطوة الجديدة: البحث عن رد آيلا المرتبط وحذفه
-                        # نتأكد أن هناك رسالة تالية، وأنها فعلاً من "assistant"
-                        if i + 1 < len(st.session_state.messages):
-                            next_msg = st.session_state.messages[i+1]
-                            if next_msg['role'] == 'assistant' and "db_id" in next_msg:
-                                # نحذف رد الآيلا من سوبابيس
-                                db_handler.delete_message(next_msg["db_id"])
-
-                        # 3. حذف رسالتك أنتِ من سوبابيس
-                        if "db_id" in msg_to_del:
-                            db_handler.delete_message(msg_to_del["db_id"])
-
-                        # 4. تحديث الشاشة (حذف ما تبقى محلياً)
-                        st.session_state.messages = st.session_state.messages[:i]
-                        st.rerun()
+                    # 2. زر التعديل (هذا اللي كان ممسوح!) ✏️
+                    with c2:
+                        st.markdown('<div class="tiny-btn">', unsafe_allow_html=True)
+                        # عند الضغط، نحفظ رقم الرسالة (Index) بمتغير الجلسة لفتح وضع التعديل
+                        if st.button("✏️", key=f"edit_btn_{i}"):
+                            st.session_state.edit_index = i
+                            st.rerun()
                         st.markdown('</div>', unsafe_allow_html=True)
 
         # --- منطقة الإدخال ---

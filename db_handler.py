@@ -69,13 +69,12 @@ def signup_user(email, password, real_name, nickname):
 
 def login_user(email, password):
     """
-    تسجيل الدخول العادي
+    تسجيل الدخول العادي + إرجاع توكن التجديد
     """
     clean_email = email.lower().strip()
     
-    # التحقق من القائمة البيضاء (اختياري، يمكن تعطيله إذا أردت السماح للجميع)
     if clean_email not in ALLOWED_EMAILS:
-        # return {"error": "هذا الحساب غير مصرح له بالدخول."}
+        # pass # أو تفعيل الحماية
         pass 
 
     try:
@@ -85,43 +84,48 @@ def login_user(email, password):
         })
         
         user = auth_response.user
-        if not user:
+        session = auth_response.session # 👈 نحتاج الجلسة لجلب التوكنات
+
+        if not user or not session:
             return {"error": "بيانات الدخول غير صحيحة"}
 
         # جلب البروفايل
         data = supabase.table("profiles").select("*").eq("id", user.id).execute()
         profile = data.data[0] if data.data else {}
 
-        return {"success": True, "user": user, "profile": profile}
+        return {
+            "success": True, 
+            "user": user, 
+            "profile": profile,
+            "access_token": session.access_token,   # 👈 المفتاح المؤقت (ساعة)
+            "refresh_token": session.refresh_token  # 👈 المفتاح الدائم (يجدد الجلسة)
+        }
 
     except Exception as e:
         return {"error": f"فشل الدخول: {str(e)}"}
-
-def login_with_token(access_token):
+    
+def login_with_token(access_token, refresh_token):
     """
-    🌟 الدالة المنقذة: استعادة الجلسة عند الريلود
-    هذه الدالة تأخذ التوكن من الرابط وتخبر سوبابيس أن المستخدم هو نفسه
+    🌟 استعادة الجلسة وتجديدها تلقائياً
     """
     try:
-        # التحقق من صحة التوكن وجلب المستخدم
-        res = supabase.auth.get_user(access_token)
-        if res and res.user:
-            # تحديث جلسة العميل الحالية
-            supabase.auth.set_session(access_token, "refresh_token_placeholder")
-            return {"success": True, "user": res.user}
+        # محاولة تعيين الجلسة.
+        # إذا كان access_token منتهي الصلاحية، سوبابيس ستستخدم refresh_token تلقائياً لإنعاش الجلسة.
+        res = supabase.auth.set_session(access_token, refresh_token)
+        
+        if res and res.user and res.session:
+            return {
+                "success": True, 
+                "user": res.user,
+                # نرجع التوكنات الجديدة (قد تكون تغيرت بعد التحديث)
+                "new_access_token": res.session.access_token,
+                "new_refresh_token": res.session.refresh_token
+            }
         else:
-            return {"error": "Invalid Token"}
+            return {"error": "Invalid Session Data"}
+            
     except Exception as e:
-        return {"error": str(e)}
-
-def logout_user():
-    """
-    تسجيل الخروج
-    """
-    try:
-        supabase.auth.sign_out()
-        return {"success": True}
-    except Exception as e:
+        # إذا كان الـ Refresh Token أيضاً منتهي الصلاحية (مر عليه أسبوع مثلاً)
         return {"error": str(e)}
 
 # ==========================================
@@ -183,18 +187,23 @@ def update_project_tasks(project_id, tasks_list):
 # 💬 Chat Persistence Functions
 # ==========================================
 
-def save_message(project_id, role, content, image_url=None):
+def save_message(project_id, role, content, image_urls=None): 
     try:
+        # التأكد أن الصور هي قائمة (List) أو None
+        if image_urls and not isinstance(image_urls, list):
+            image_urls = [image_urls]
+
         data = {
             "project_id": project_id,
             "role": role,
             "content": content,
-            "image_url": image_url
+            "image_urls": image_urls 
         }
-        # التعديل هنا: نخزن نتيجة التنفيذ في متغير res ونرجع الـ id
+        
+        
         res = supabase.table("chat_messages").insert(data).execute()
         if res.data:
-            return res.data[0]['id'] # نرجع الهوية الجديدة
+            return res.data[0]['id']
         return None
     except Exception as e:
         print(f"Error saving message: {e}")
@@ -212,7 +221,9 @@ def get_project_messages(project_id):
             formatted_messages.append({
                 "role": msg["role"],
                 "content": msg["content"],
-                "image": msg.get("image_url"),
+                # 👇 التعديل هنا: قمنا بتغيير image_url إلى image_urls
+                # ونستخدم get لضمان عدم حدوث خطأ إذا كانت null
+                "image": msg.get("image_urls") if msg.get("image_urls") else [],
                 "db_id": msg["id"]
             })
         return formatted_messages
@@ -304,9 +315,19 @@ def archive_current_chat(project_id, messages_list, summary_snapshot):
         for msg in messages_list:
             role = "👤 المعماري" if msg['role'] == 'user' else "👷‍♀️ آيلا"
             content = msg['content']
-            if isinstance(content, list): 
-                content = "[صورة + نص]"
-            formatted_text += f"{role}: {content}\n{'-'*20}\n"
+            
+            # معالجة الصور في الأرشيف النصي
+            images_note = ""
+            if msg.get('image'): # في الذاكرة الحية اسمها image
+                count = len(msg['image']) if isinstance(msg['image'], list) else 1
+                images_note = f"\n[مرفق: {count} صور/مخططات]"
+            
+            # أو إذا كانت جاية من الداتابيس اسمها image_urls
+            elif msg.get('image_urls'):
+                 count = len(msg['image_urls'])
+                 images_note = f"\n[مرفق: {count} صور/مخططات]"
+
+            formatted_text += f"{role}: {content}{images_note}\n{'-'*20}\n"
 
         data = {
             "project_id": project_id,
