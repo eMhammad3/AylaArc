@@ -184,7 +184,7 @@ def get_system_prompt(phase, project_data=None, history_len=0, is_risk_mode=Fals
     === STUDIO CONTEXT & TARGETS (TOP SECRET) ===
     - Current Timeline: We are now in the SECOND SEMESTER (الكورس الثاني).
     - History: All grades listed below are from the FIRST SEMESTER (درجات الكورس الأول).
-    - Student: إسراء أحمد (Nickname: سيرو - Sero). Current Grade from 1st Semester: 78.
+    - Student: إسراء أحمد. Current Grade from 1st Semester: 78.
     - Goal: Move from 78 to 100 in this semester and outperform the top tier.
     - Head of Jury: Dr. Anwar (دكتور أنور). He is the decision-maker. Strict, hates randomness, loves structural logic and Neufert compliance.
     - The Committee: 5 members (Dr. Anwar + 4 experts). 
@@ -214,7 +214,6 @@ def get_system_prompt(phase, project_data=None, history_len=0, is_risk_mode=Fals
     - STRATEGIC DEFENSE: Teach Esraa how to "sell" her design to Dr. Anwar using engineering arguments he respects (e.g., "Tell him this orientation reduces thermal gain by 20%").
     - ROLE RE-DEFINITION: You are not a friend; you are a high-stakes Architectural Mentor.
     - TOUGH LOVE PRINCIPLE: Your primary goal is to save Esraa from a 70/100 disaster. Being "nice" is a betrayal to her future career.
-    - EMOTIONAL DISTANCE: Only use the nickname "Sero" when she achieves a technical breakthrough. If she fails a requirement, address her as "Student" or "Eng. Esraa" to signal your professional disappointment.
     - THE "ANWAR" PROXY: You are the firewall. If a design doesn't pass you, it will never reach Dr. Anwar. You are harsher than him because you care about the 95+ result.
 
     ROLE: You are "Eng. Ayla" (المعمارية آيلا), a Senior Female Architectural Mentor specializing in 2nd-year students. 
@@ -713,7 +712,7 @@ def encode_image(image_file):
     """تحويل الصورة إلى نص (Base64) ليفهمها OpenRouter"""
     return base64.b64encode(image_file.read()).decode('utf-8')
 
-def stream_response(user_input, chat_history, phase, project_data=None, image_file=None, is_risk_mode=False, summary_text=""): # 👈 ضيفنا المتغير بالاخير
+def stream_response(user_input, chat_history, phase, project_data=None, image_file=None, is_risk_mode=False, summary_text=""): 
     """
     العقل المدبر: يختار الطريق (جوجل أو أوبن راوتر) بناءً على الإعدادات.
     """
@@ -738,26 +737,30 @@ def stream_response(user_input, chat_history, phase, project_data=None, image_fi
             if isinstance(msg["content"], str):
                 messages.append({"role": msg["role"], "content": msg["content"]})
             else:
-                # هذا السطر السحري: يكول لآيلا تراجع نقدها القديم حتى تتذكر الصورة
-                note = "[SYSTEM: Student uploaded an image here. Read your PREVIOUS reply to recall its details.]"
+                # تذكير لآيلا بالصور السابقة
+                note = "[SYSTEM: Student uploaded images here. Read your PREVIOUS reply to recall details.]"
                 messages.append({"role": msg["role"], "content": note})
             
-        # 2. تجهيز الرسالة الحالية (مع الصورة إن وجدت)
+        # 2. تجهيز الرسالة الحالية (مع دعم تعدد الصور) 🔥
         user_msg_content = [{"type": "text", "text": user_input}]
         
         if image_file:
-            try:
-                # نعيد قراءة الملف لأن Streamlit ربما استهلكه
-                image_file.seek(0) 
-                b64_img = encode_image(image_file)
-                user_msg_content.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"}
-                })
-                # طباعة للفحص
-                print("--- 📸 Image converted to Base64 for OpenRouter ---")
-            except Exception as e:
-                print(f"Error encoding image: {e}")
+            # 🔥 التغيير الجوهري هنا: توحيد التعامل (دائماً نتعامل مع قائمة)
+            # إذا كان ملف واحد، نضعه داخل قائمة. إذا كان قائمة، نتركه كما هو.
+            files_to_process = image_file if isinstance(image_file, list) else [image_file]
+
+            for img in files_to_process:
+                try:
+                    # نعيد قراءة الملف لأن Streamlit ربما استهلكه
+                    img.seek(0) 
+                    b64_img = encode_image(img)
+                    user_msg_content.append({
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"}
+                    })
+                    print("--- 📸 Image processed successfully ---")
+                except Exception as e:
+                    print(f"Error encoding image in core_logic: {e}")
             
         messages.append({"role": "user", "content": user_msg_content})
 
@@ -768,11 +771,9 @@ def stream_response(user_input, chat_history, phase, project_data=None, image_fi
                 model=CURRENT_MODEL_NAME,
                 messages=messages,
                 stream=True,
-                # الهيدرز المطلوبة (Headers) لكي يقبل OpenRouter الطلب
                 extra_headers={
-                    "HTTP-Referer": "http://localhost:8501", # مطلوب
-                    "X-Title": "AylaArc", # مطلوب
-                    # 👇 هذا السطر يحميك: يرفض الطلب إذا كان الموديل بفلوس وأنت تتوقع مجاني
+                    "HTTP-Referer": "http://localhost:8501",
+                    "X-Title": "AylaArc",
                     "X-OpenRouter-Is-Free": "true" if ":free" in CURRENT_MODEL_NAME else "false"
                 }
             )
@@ -782,7 +783,6 @@ def stream_response(user_input, chat_history, phase, project_data=None, image_fi
                     yield chunk.choices[0].delta.content
                     
         except Exception as e:
-            # طباعة الخطأ بالكامل في التيرمينال
             print(f"\n❌ FATAL OpenRouter Error: {e}")
             yield f"حدث خطأ في الاتصال بـ OpenRouter: {e}"
 
@@ -790,10 +790,9 @@ def stream_response(user_input, chat_history, phase, project_data=None, image_fi
     # المسار الثاني: Google Native (للطوارئ)
     # ---------------------------------------------------------
     elif CURRENT_PROVIDER == "google":
-        # نفس الكود القديم الخاص بجوجل (احتفظنا به كخطة ب)
         print("--- 🔄 Switching to Google Native Provider ---")
         model = genai.GenerativeModel(
-            model_name='gemini-1.5-flash', # نثبته على الموديل المستقر
+            model_name='gemini-1.5-flash',
             system_instruction=system_instruction,
             generation_config=GENERATION_CONFIG,
             safety_settings=SAFETY_SETTINGS
@@ -808,11 +807,15 @@ def stream_response(user_input, chat_history, phase, project_data=None, image_fi
         chat = model.start_chat(history=gemini_history)
         
         req_content = [user_input]
+        
+        # 🔥 دعم تعدد الصور لجوجل أيضاً
         if image_file:
-            try:
-                img = PIL.Image.open(image_file)
-                req_content.append(img)
-            except: pass
+            files_to_process = image_file if isinstance(image_file, list) else [image_file]
+            for img in files_to_process:
+                try:
+                    pil_img = PIL.Image.open(img)
+                    req_content.append(pil_img)
+                except: pass
             
         try:
             response = chat.send_message(req_content, stream=True)

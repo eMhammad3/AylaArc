@@ -1350,47 +1350,44 @@ elif st.session_state.app_stage == 'main_chat':
         prompt = st.chat_input("سولفيلي...")
 
         if prompt:
+            # 1. عرض رسالة المستخدم فوراً
             with st.chat_message("user", avatar="👷‍♀️"):
                 st.markdown('<div class="user-marker"></div>', unsafe_allow_html=True)
-                # 1. عرض الصور (Streamlit ذكي ويعرض القائمة كاملة تلقائياً)
-                # --- 🖼️ عرض المعاينة الفورية للصور المرفوعة ---
                 if uploaded_files:
-                    num_imgs = len(uploaded_files)
-                    # نسوي نظام أعمدة ذكي (ما يتجاوز 3 بالسطر الواحد)
-                    cols = st.columns(min(num_imgs, 3))
+                    cols = st.columns(min(len(uploaded_files), 3))
                     for idx, f in enumerate(uploaded_files):
                         with cols[idx % 3]:
-                            st.image(f, use_container_width=True, caption=f"رسمة {idx+1}")
+                            st.image(f, use_container_width=True)
                 st.markdown(prompt)
             
-            # 2. منطق الرفع للسحابة
-            image_url = None
-            # 2. منطق الرفع للسحابة (التعديل لحفظ الكل)
-            image_urls = [] # مصفوفة لتجميع كل الروابط
+            # 2. تجهيز الصور (رفع + إعادة تعبئة)
+            image_urls = []
             if uploaded_files:
-                with st.spinner("جاري رفع كل المخططات..."):
-                    for f in uploaded_files:
-                        up_res = db_handler.upload_image(f)
-                        if "success" in up_res:
-                            image_urls.append(up_res["url"]) # إضافة كل رابط للقائمة
-            
-            # 3. الحفظ في الذاكرة الحية (للمعاينة الفورية)
+                # نرفع الصور للداتابيس
+                for f in uploaded_files:
+                    # أ) احتياط: نرجع للبداية قبل الرفع
+                    f.seek(0)
+                    up_res = db_handler.upload_image(f)
+                    if "success" in up_res:
+                        image_urls.append(up_res["url"])
+                    
+                    # 🔥 ب) هذا هو الحل: نرجع الشريط للبداية مرة ثانية عشان آيلا تشوفها
+                    f.seek(0) 
+
+            # 3. الحفظ بالذاكرة الحية (مع الصور المملوءة)
             st.session_state.messages.append({
                 "role": "user", 
                 "content": prompt, 
                 "image": uploaded_files 
             })
             
-            # 4. الحفظ في الداتابيس (نرسل قائمة الروابط كاملة)
+            # 4. الحفظ بالداتابيس
             if 'id' in st.session_state.project_data:
-                current_pid = st.session_state.project_data['id']
-                # نمرر image_urls (القائمة) بدلاً من رابط واحد
-                new_db_id = db_handler.save_message(current_pid, "user", prompt, image_urls) 
-                if new_db_id:
-                    st.session_state.messages[-1]["db_id"] = new_db_id
-            
+                db_handler.save_message(st.session_state.project_data['id'], "user", prompt, image_urls)
+
             st.session_state.trigger_generation = True
             st.session_state.upload_key = str(time.time())
+            st.rerun()
 
         if st.session_state.trigger_generation:
             last_msg = st.session_state.messages[-1]
