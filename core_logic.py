@@ -1,9 +1,16 @@
 import textwrap
 import PIL.Image
+import PyPDF2
+import fitz  # PyMuPDF
+import docx
+from pptx import Presentation
+import openpyxl
 import os
 import base64  # 👈 مكتبة جديدة لمعالجة الصور لأوبن راوتر
 import datetime # 👈 للتاريخ والوقت
 import google.generativeai as genai
+import re  # 👈 هذا هو السطر الجديد اللي تضيفه (مكتبة الـ Regular Expressions)
+import json
 from openai import OpenAI # 👈 المكتبة التي ستكلم أوبن راوتر
 from dotenv import load_dotenv
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
@@ -32,7 +39,7 @@ CURRENT_PROVIDER = "openrouter"
 # 2. اختر الموديل:
 # عقل الفحص : 'arcee-ai/trinity-large-preview:free'
 # عقل ايلا : 'google/gemini-3-pro-preview'
-CURRENT_MODEL_NAME = 'google/gemini-3-pro-preview'
+CURRENT_MODEL_NAME = 'arcee-ai/trinity-large-preview:free'
 
 # إعدادات التوليد
 GENERATION_CONFIG = {
@@ -743,26 +750,147 @@ def stream_response(user_input, chat_history, phase, project_data=None, image_fi
                 note = "[SYSTEM: Student uploaded images here. Read your PREVIOUS reply to recall details.]"
                 messages.append({"role": msg["role"], "content": note})
             
-        # 2. تجهيز الرسالة الحالية (مع دعم تعدد الصور) 🔥
+        # 2. تجهيز الرسالة الحالية (مع فرز الملفات عن الصور) 🔥
         user_msg_content = [{"type": "text", "text": user_input}]
         
+        # =================================================================================
+        # 📂 بداية بلوك معالجة الملفات الشامل (صور + PDF مرئي + أوفيس)
+        # =================================================================================
         if image_file:
-            # 🔥 التغيير الجوهري هنا: توحيد التعامل (دائماً نتعامل مع قائمة)
-            # إذا كان ملف واحد، نضعه داخل قائمة. إذا كان قائمة، نتركه كما هو.
             files_to_process = image_file if isinstance(image_file, list) else [image_file]
 
-            for img in files_to_process:
+            for file_obj in files_to_process:
                 try:
-                    # نعيد قراءة الملف لأن Streamlit ربما استهلكه
-                    img.seek(0) 
-                    b64_img = encode_image(img)
-                    user_msg_content.append({
-                        "type": "image_url",
-                        "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"}
-                    })
-                    print("--- 📸 Image processed successfully ---")
-                except Exception as e:
-                    print(f"Error encoding image in core_logic: {e}")
+                    fname = file_obj.name.lower()
+                    
+                    # ---------------------------------------------------------
+                    # 1️⃣ الصور (PNG, JPG, WEBP) -> آيلا "تشوفها"
+                    # ---------------------------------------------------------
+                    if fname.endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                        file_obj.seek(0) 
+                        b64_img = encode_image(file_obj)
+                        user_msg_content.append({
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"}
+                        })
+
+                    # ---------------------------------------------------------
+                    # 2️⃣ ملفات PDF -> نحولها لصور حتى آيلا "تشوف" المخططات
+                    # ---------------------------------------------------------
+                    elif fname.endswith('.pdf'):
+                        try:
+                            file_obj.seek(0)
+                            pdf_bytes = file_obj.read()
+                            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                            
+                            # نأخذ أول 5 صفحات ونحولها لصور
+                            pages_count = len(doc)
+                            for i, page in enumerate(doc[:5]):
+                                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2)) # دقة عالية
+                                img_data = pix.tobytes("png")
+                                b64_img = base64.b64encode(img_data).decode('utf-8')
+                                user_msg_content.append({
+                                    "type": "image_url",
+                                    "image_url": {"url": f"data:image/png;base64,{b64_img}"}
+                                })
+                            
+                            user_msg_content.append({
+                                "type": "text", 
+                                "text": f"\n[System Note: User uploaded PDF '{file_obj.name}' ({pages_count} pages). I converted the first {len(doc[:5])} pages to IMAGES. Analyze the layouts/drawings visually.]"
+                            })
+                            print(f"✅ PDF processed visually: {fname}")
+                        except Exception as e:
+                            print(f"❌ PDF Error: {e}")
+
+                    # ---------------------------------------------------------
+                    # 3️⃣ ملفات Word (.docx) -> قراءة نصوص + جداول
+                    # ---------------------------------------------------------
+                    elif fname.endswith('.docx'):
+                        try:
+                            file_obj.seek(0)
+                            doc = docx.Document(file_obj)
+                            full_text = []
+                            # قراءة الفقرات
+                            for para in doc.paragraphs:
+                                if para.text.strip(): full_text.append(para.text)
+                            # قراءة الجداول (مهم للمعماريين)
+                            for table in doc.tables:
+                                full_text.append("\n[--- Table Start ---]")
+                                for row in table.rows:
+                                    row_text = [cell.text for cell in row.cells]
+                                    full_text.append(" | ".join(row_text))
+                                full_text.append("[--- Table End ---]\n")
+                            
+                            content_str = "\n".join(full_text)[:6000] # أول 6000 حرف
+                            user_msg_content.append({
+                                "type": "text", 
+                                "text": f"\n[System Note: User uploaded Word Doc '{file_obj.name}'. Content:\n{content_str}]"
+                            })
+                            print(f"✅ Word processed: {fname}")
+                        except Exception as e:
+                            print(f"❌ Word Error: {e}")
+
+                    # ---------------------------------------------------------
+                    # 4️⃣ ملفات PowerPoint (.pptx) -> قراءة السلايدات
+                    # ---------------------------------------------------------
+                    elif fname.endswith('.pptx'):
+                        try:
+                            file_obj.seek(0)
+                            prs = Presentation(file_obj)
+                            ppt_text = []
+                            for i, slide in enumerate(prs.slides):
+                                slide_txt = []
+                                for shape in slide.shapes:
+                                    if hasattr(shape, "text") and shape.text.strip():
+                                        slide_txt.append(shape.text)
+                                if slide_txt:
+                                    ppt_text.append(f"Slide {i+1}: {' '.join(slide_txt)}")
+                            
+                            content_str = "\n".join(ppt_text)[:6000]
+                            user_msg_content.append({
+                                "type": "text", 
+                                "text": f"\n[System Note: User uploaded PPTX '{file_obj.name}'. Content:\n{content_str}]"
+                            })
+                            print(f"✅ PPTX processed: {fname}")
+                        except Exception as e:
+                            print(f"❌ PPTX Error: {e}")
+
+                    # ---------------------------------------------------------
+                    # 5️⃣ ملفات Excel (.xlsx) -> قراءة البيانات
+                    # ---------------------------------------------------------
+                    elif fname.endswith('.xlsx'):
+                        try:
+                            file_obj.seek(0)
+                            wb = openpyxl.load_workbook(file_obj, data_only=True)
+                            sheet = wb.active
+                            excel_data = []
+                            # قراءة أول 100 سطر فقط
+                            for row in sheet.iter_rows(min_row=1, max_row=100, values_only=True):
+                                # تحويل القيم لنص، مع استبعاد القيم الفارغة
+                                row_str = [str(v) if v is not None else "" for v in row]
+                                excel_data.append(" | ".join(row_str))
+                            
+                            content_str = "\n".join(excel_data)
+                            user_msg_content.append({
+                                "type": "text", 
+                                "text": f"\n[System Note: User uploaded Excel '{file_obj.name}'. First 20 rows:\n{content_str}]"
+                            })
+                            print(f"✅ Excel processed: {fname}")
+                        except Exception as e:
+                            print(f"❌ Excel Error: {e}")
+
+                    # ---------------------------------------------------------
+                    # 6️⃣ ملفات أخرى (DWG, ZIP...) -> إشعار فقط
+                    # ---------------------------------------------------------
+                    else:
+                        user_msg_content.append({
+                            "type": "text", 
+                            "text": f"\n[System Note: User uploaded a file named '{file_obj.name}'. It is a binary file (like DWG), so I cannot read its content, but I acknowledge receipt.]"
+                        })
+
+                except Exception as master_err:
+                    print(f"⚠️ Error processing file {file_obj.name}: {master_err}")
+        # =================================================================================
             
         messages.append({"role": "user", "content": user_msg_content})
 
@@ -876,3 +1004,34 @@ def generate_summary(chat_history, old_summary=""):
     except Exception as e:
         print(f"Summarization Error: {e}")
         return old_summary # في حال الفشل، أعد القديم كما هو
+    
+def extract_and_sanitize_json(text):
+    """
+    دالة جراحية لاستخراج الـ JSON بدقة حتى لو كان ملوثاً بـ Markdown
+    أو يحتوي على أخطاء Syntax شائعة.
+    """
+    # 1. استخدام Regex للبحث بدقة بين العلامات
+    pattern = r"\[FACTS_JSON\](.*?)\[/FACTS_JSON\]"
+    match = re.search(pattern, text, re.DOTALL)
+
+    if not match:
+        return None
+
+    raw_content = match.group(1).strip()
+
+    # 2. تنظيف الـ Markdown Code Blocks
+    raw_content = re.sub(r"^```json\s*", "", raw_content, flags=re.MULTILINE)
+    raw_content = re.sub(r"^```\s*", "", raw_content, flags=re.MULTILINE)
+    raw_content = re.sub(r"\s*```$", "", raw_content, flags=re.MULTILINE)
+
+    # 3. محاولة التحويل (Parsing)
+    try:
+        return json.loads(raw_content)
+    except json.JSONDecodeError:
+        # 4. محاولة الإصلاح (Fallback)
+        try:
+            fixed_content = re.sub(r",\s*([\]}])", r"\1", raw_content)
+            return json.loads(fixed_content)
+        except:
+            print(f"❌ JSON GUARDRAIL FAILED: Could not parse content:\n{raw_content}")
+            return None

@@ -5,6 +5,7 @@ import time
 import db_handler
 import datetime
 import extra_streamlit_components as stx
+import base64
 
 # 1. إعدادات الصفحة
 st.set_page_config(
@@ -1281,24 +1282,33 @@ elif st.session_state.app_stage == 'main_chat':
                     else: st.markdown('<div class="assistant-marker"></div>', unsafe_allow_html=True)
                     
                     # --- 🖼️ عرض الصور بنظام الشبكة (Grid) ---
+                    # --- 🖼️ عرض الصور والملفات (المصحح) ---
                     if message.get("image"):
                         imgs = message["image"]
-                        # إذا كانت صورة واحدة، نعرضها عادي
-                        if not isinstance(imgs, list):
-                            st.image(imgs, width=300)
-                        else:
-                            # إذا مجموعة صور، نسوي أعمدة (مثلاً 3 أعمدة)
-                            cols = st.columns(min(len(imgs), 3)) 
-                            for idx, img_file in enumerate(imgs):
-                                with cols[idx % 3]:
+                        # التعامل مع مفرد أو جمع
+                        if not isinstance(imgs, list): imgs = [imgs]
+                        
+                        cols = st.columns(min(len(imgs), 3))
+                        for idx, img_file in enumerate(imgs):
+                            with cols[idx % 3]:
+                                try:
+                                    # محاولة عرضه كصورة
                                     st.image(img_file, use_container_width=True)
+                                except:
+                                    # إذا فشل (يعني PDF أو غيره)، اعرضه كملف
+                                    f_name = "ملف مرفق"
+                                    if hasattr(img_file, 'name'): f_name = img_file.name
+                                    elif isinstance(img_file, str): f_name = "رابط ملف"
+                                    
+                                    st.info(f"📄 {f_name}")
                     st.markdown(message["content"])
                 
                 if role == "user" and i == last_user_index:
                     c1, c2, c3 = st.columns([0.05, 0.05, 0.9])
                     with c1:
                         st.markdown('<div class="tiny-btn">', unsafe_allow_html=True)
-                        # ========================================================
+                        
+                    # ========================================================
                     # 🛠️ تصحيح زر الحذف: يحذف رسالتك + رد الآيلا من الداتابيس
                     # ========================================================
                     # هذا الشرط يخلي الأزرار تطلع بس لآخر رسالة كتبها المستخدم
@@ -1335,13 +1345,14 @@ elif st.session_state.app_stage == 'main_chat':
         with st.popover("📎", use_container_width=False):
             st.caption("📂 رفع ملفات المشروع")
             
-            # ✅ التصحيح: وضعنا اسماً للزر وأخفيناه بـ label_visibility
+            # ✅ التصحيح: السماح بملفات المعماريين (PDF, CAD, Images)
             uploaded_files = st.file_uploader(
-                "Upload Image",  # نص وهمي لإسكات الخطأ
-                type=["png", "jpg", "jpeg"], 
+                "Upload Project Files", 
+                # ضفنا PDF وأنواع أخرى، تكدر تضيف dwg إذا تحب
+                type=["png", "jpg", "jpeg", "pdf", "webp", "docx", "xlsx", "dwg", "pptx"],
                 key=st.session_state.upload_key, 
                 accept_multiple_files=True,
-                label_visibility="collapsed" # إخفاء النص
+                label_visibility="collapsed"
             )
 
         if 'trigger_generation' not in st.session_state:
@@ -1353,11 +1364,34 @@ elif st.session_state.app_stage == 'main_chat':
             # 1. عرض رسالة المستخدم فوراً
             with st.chat_message("user", avatar="👷‍♀️"):
                 st.markdown('<div class="user-marker"></div>', unsafe_allow_html=True)
+                # منطقة عرض الملفات المرفوعة (انسخ هذا البلوك كله)
                 if uploaded_files:
                     cols = st.columns(min(len(uploaded_files), 3))
                     for idx, f in enumerate(uploaded_files):
                         with cols[idx % 3]:
-                            st.image(f, use_container_width=True)
+                            f.seek(0) # 👈 حركة مهمة حتى ما يضرب ايرور
+
+                            # 1. إذا الملف صورة -> اعرضها
+                            if f.name.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                                try:
+                                    st.image(f, use_container_width=True)
+                                except:
+                                    st.error(f"❌ خطأ في الصورة: {f.name}")
+
+                            # 2. إذا ملفات أوفيس (Excel, PPTX, Word) -> اعرض نصيحة
+                            elif f.name.lower().endswith(('.xlsx', '.pptx', '.docx')):
+                                st.info(f"📄 {f.name}")
+                                st.caption("تنبيه!: هذا النوع من الملفات يفضل تحويله ل pdf لان ايلا متدربة على قراءة ال pdf بدقة اكبر")
+
+                            # 3. إذا أوتوكاد (DWG) -> اعرض تحذير
+                            elif f.name.lower().endswith('.dwg'):
+                                st.warning(f"⚠️ {f.name}\n(ملف غير مقروء، يرجى تحويله لـ PDF)")
+
+                            # 4. باقي الملفات (مثل PDF) -> اعرضها كملف عادي
+                            else:
+                                st.info(f"📄 مرفق: {f.name}")
+                            
+                            f.seek(0) # 👈 نرجع المؤشر للبداية عشان الارسال
                 st.markdown(prompt)
             
             # 2. تجهيز الصور (رفع + إعادة تعبئة)
@@ -1421,29 +1455,30 @@ elif st.session_state.app_stage == 'main_chat':
                 
                 # أ) معالجة الكواليس (بدون ما توقف العرض)
                 try:
-                    # 1. صيد الحقائق (JSON Facts)
-                    import json
+                    # 1. صيد الحقائق (JSON Facts) - التحديث الجديد باستخدام الحارس 🛡️
                     if "[FACTS_JSON]" in full_res:
-                        start_marker = "[FACTS_JSON]"
-                        end_marker = "[/FACTS_JSON]"
-                        if end_marker in full_res:
-                            # قص النص
-                            s_idx = full_res.find(start_marker) + len(start_marker)
-                            e_idx = full_res.find(end_marker)
-                            json_txt = full_res[s_idx:e_idx].strip()
-                            
-                            # محاولة التخزين (بصمت)
+                        # أ) استخراج البيانات باستخدام دالة الحماية التي صنعناها في core_logic
+                        # هذه الدالة ستنظف النص وتعالج أخطاء الموديل قبل القراءة
+                        facts_dict = core_logic.extract_and_sanitize_json(full_res)
+                        
+                        # ب) التحديث في قاعدة البيانات والذاكرة (فقط إذا نجح الاستخراج)
+                        if facts_dict:
                             try:
-                                facts_dict = json.loads(json_txt)
                                 if 'id' in st.session_state.project_data:
                                     pid = st.session_state.project_data['id']
                                     db_handler.update_project_facts(pid, facts_dict)
                                     st.session_state.project_data['project_facts'] = facts_dict
                             except Exception as db_err:
-                                print(f"⚠️ JSON Save Error: {db_err}")
+                                print(f"⚠️ Database Update Error: {db_err}")
 
-                            # تنظيف الرد للعرض
-                            full_res = full_res[:full_res.find(start_marker)] + full_res[e_idx+len(end_marker):]
+                        # ج) تنظيف الرد للعرض (حذف كود الـ JSON من الشاشة ليراها المستخدم نصاً فقط)
+                        start_marker = "[FACTS_JSON]"
+                        end_marker = "[/FACTS_JSON]"
+                        if start_marker in full_res and end_marker in full_res:
+                            # قص النص يدوياً بدقة لضمان عدم حذف باقي الجواب
+                            s_idx = full_res.find(start_marker)
+                            e_idx = full_res.find(end_marker) + len(end_marker)
+                            full_res = (full_res[:s_idx] + full_res[e_idx:]).strip()
 
                     # 2. صيد الأقفال (Unlocking Phase)
                     for i in range(1, 9):
