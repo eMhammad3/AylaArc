@@ -5,6 +5,9 @@ import time
 import db_handler
 import datetime
 import extra_streamlit_components as stx
+import base64
+from urllib.parse import unquote, urlparse
+import os
 
 # 1. إعدادات الصفحة
 st.set_page_config(
@@ -13,6 +16,39 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# ==========================================
+# 🎨 تعريف ستايل الصور (Gemini Style CSS)
+# ==========================================
+st.markdown("""
+<style>
+    /* الحاوية الرئيسية للصور: رصف أفقي */
+    .gemini-gallery {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 8px;
+        align-items: center;
+    }
+    
+    /* شكل الصورة المصغرة */
+    .gemini-thumb {
+        width: 70px !important;
+        height: 70px !important;
+        border-radius: 10px !important;
+        object-fit: cover !important; /* هذا اللي يمنع التمطيط */
+        border: 1px solid rgba(255,255,255,0.2);
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    
+    .gemini-thumb:hover {
+        transform: scale(1.05);
+        border-color: #fca311;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # 🛡️ الجزء الأول: تهيئة الذاكرة (إصلاح الـ AttributeError للأبد)
@@ -1280,33 +1316,101 @@ elif st.session_state.app_stage == 'main_chat':
                     if role == "user": st.markdown('<div class="user-marker"></div>', unsafe_allow_html=True)
                     else: st.markdown('<div class="assistant-marker"></div>', unsafe_allow_html=True)
                     
-                    # --- 🖼️ عرض الصور بنظام الشبكة (Grid) ---
-                    # --- 🖼️ عرض الصور والملفات (المصحح) ---
+                    # ============================================================
+                    # 🖼️ GEMINI GALLERY (FINAL PERSISTENCE FIX)
+                    # ============================================================
                     if message.get("image"):
-                        imgs = message["image"]
-                        # التعامل مع مفرد أو جمع
-                        if not isinstance(imgs, list): imgs = [imgs]
+                        raw_data = message["image"]
                         
-                        cols = st.columns(min(len(imgs), 3))
-                        for idx, img_file in enumerate(imgs):
-                            with cols[idx % 3]:
+                        # 1. التسطيح (Flattening)
+                        all_items = []
+                        if isinstance(raw_data, list):
+                            for item in raw_data:
+                                if isinstance(item, list): all_items.extend(item)
+                                else: all_items.append(item)
+                        else:
+                            all_items = [raw_data]
+
+                        images_bucket = []
+                        files_bucket = []
+                        img_exts = ('.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp')
+
+                        for item in all_items:
+                            try:
+                                is_url = False
+                                f_name = "ملف مرفق"
+                                
+                                # معالجة الروابط
+                                if isinstance(item, str):
+                                    is_url = True
+                                    # محاولة استخراج الاسم من الرابط
+                                    try:
+                                        decoded = unquote(item)
+                                        # نأخذ آخر جزء بعد الـ / ونحذف أي باراميترات بعد ؟
+                                        f_name = decoded.split('/')[-1].split('?')[0]
+                                    except:
+                                        f_name = item[-15:] # اسم مؤقت في حال الفشل
+                                
+                                # معالجة الملفات المرفوعة
+                                elif hasattr(item, 'name'):
+                                    f_name = item.name
+
+                                # الفرز (الآن نعتمد على الاسم المستخرج بدقة)
+                                if f_name.lower().endswith(img_exts):
+                                    images_bucket.append(item)
+                                else:
+                                    # أي شيء ليس صورة هو ملف (PPTX, PDF, Unknown)
+                                    files_bucket.append({"item": item, "name": f_name, "is_url": is_url})
+                            except:
+                                continue
+
+                        # عرض الصور
+                        if images_bucket:
+                            gallery_html = '<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">'
+                            for img in images_bucket:
+                                src = ""
                                 try:
-                                    # محاولة عرضه كصورة
-                                    st.image(img_file, use_container_width=True)
-                                except:
-                                    # إذا فشل (يعني PDF أو غيره)، اعرضه كملف
-                                    f_name = "ملف مرفق"
-                                    if hasattr(img_file, 'name'): f_name = img_file.name
-                                    elif isinstance(img_file, str): f_name = "رابط ملف"
-                                    
-                                    st.info(f"📄 {f_name}")
+                                    if isinstance(img, str): src = img
+                                    elif hasattr(img, 'getvalue'):
+                                        img.seek(0)
+                                        b64 = base64.b64encode(img.read()).decode('utf-8')
+                                        mime = img.type if hasattr(img, 'type') else "image/png"
+                                        src = f"data:{mime};base64,{b64}"
+                                    if src:
+                                        gallery_html += f'<div style="width: 70px; height: 70px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;"><img src="{src}" width="70" height="70" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" onclick="window.open(this.src, \'_blank\')"></div>'
+                                except: continue
+                            gallery_html += '</div>'
+                            st.markdown(gallery_html, unsafe_allow_html=True)
+
+                        # عرض الملفات (مع التأكد من ظهور كل شيء)
+                        if files_bucket:
+                            for file_obj in files_bucket:
+                                item = file_obj["item"]
+                                name_label = file_obj["name"]
+                                is_url = file_obj["is_url"]
+                                
+                                ext = name_label.split('.')[-1].upper() if '.' in name_label else "FILE"
+                                icon = "📄"
+                                if "PDF" in ext: icon = "📕"
+                                elif "PPT" in ext: icon = "📊"
+                                elif "XLS" in ext: icon = "📊"
+                                elif "DWG" in ext: icon = "📐"
+
+                                onclick = f'onclick="window.open(\'{item}\', \'_blank\')"' if is_url else ""
+                                cursor = "pointer" if is_url else "default"
+                                
+                                st.markdown(f'''
+                                    <div {onclick} style="display: flex; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.1); cursor: {cursor}; transition: background 0.2s;">
+                                        <span style="font-size: 18px; margin-right: 12px;">{icon}</span>
+                                        <div style="display: flex; flex-direction: column; overflow: hidden;">
+                                            <span style="font-size: 13px; color: #e0e0e0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{name_label}</span>
+                                        </div>
+                                    </div>
+                                ''', unsafe_allow_html=True)
+
                     st.markdown(message["content"])
-                
-                if role == "user" and i == last_user_index:
-                    c1, c2, c3 = st.columns([0.05, 0.05, 0.9])
-                    with c1:
-                        st.markdown('<div class="tiny-btn">', unsafe_allow_html=True)
-                        # ========================================================
+
+                    # ========================================================
                     # 🛠️ تصحيح زر الحذف: يحذف رسالتك + رد الآيلا من الداتابيس
                     # ========================================================
                     # هذا الشرط يخلي الأزرار تطلع بس لآخر رسالة كتبها المستخدم
@@ -1359,37 +1463,55 @@ elif st.session_state.app_stage == 'main_chat':
         prompt = st.chat_input("سولفيلي...")
 
         if prompt:
-            # 1. عرض رسالة المستخدم فوراً
+            # 1. عرض رسالة المستخدم فوراً (بتصميم جيمناي الموحد)
             with st.chat_message("user", avatar="👷‍♀️"):
                 st.markdown('<div class="user-marker"></div>', unsafe_allow_html=True)
-                # منطقة عرض الملفات المرفوعة (انسخ هذا البلوك كله)
+                
+                # --- ✅ بداية كود عرض الصور والملفات (النسخة الفورية) ---
                 if uploaded_files:
-                    cols = st.columns(min(len(uploaded_files), 3))
-                    for idx, f in enumerate(uploaded_files):
-                        with cols[idx % 3]:
-                            f.seek(0) # 👈 حركة مهمة حتى ما يضرب ايرور
+                    # تفريغ القوائم
+                    images_bucket = []
+                    files_bucket = []
+                    img_exts = ('.png', '.jpg', '.jpeg', '.webp', '.gif')
 
-                            # 1. إذا الملف صورة -> اعرضها
-                            if f.name.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
-                                try:
-                                    st.image(f, use_container_width=True)
-                                except:
-                                    st.error(f"❌ خطأ في الصورة: {f.name}")
+                    # الفرز
+                    for f in uploaded_files:
+                        f.seek(0) # ضمان القراءة
+                        if f.name.lower().endswith(img_exts):
+                            images_bucket.append(f)
+                        else:
+                            files_bucket.append(f)
 
-                            # 2. إذا ملفات أوفيس (Excel, PPTX, Word) -> اعرض نصيحة
-                            elif f.name.lower().endswith(('.xlsx', '.pptx', '.docx')):
-                                st.info(f"📄 {f.name}")
-                                st.caption("تنبيه!: هذا النوع من الملفات يفضل تحويله ل pdf لان ايلا متدربة على قراءة ال pdf بدقة اكبر")
+                    # 1. عرض الصور (Grid)
+                    if images_bucket:
+                        gallery_html = '<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">'
+                        for img in images_bucket:
+                            img.seek(0)
+                            b64 = base64.b64encode(img.read()).decode('utf-8')
+                            mime = img.type
+                            src = f"data:{mime};base64,{b64}"
+                            gallery_html += f'<div style="width: 70px; height: 70px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;"><img src="{src}" width="70" height="70" style="width: 100%; height: 100%; object-fit: cover;"></div>'
+                        gallery_html += '</div>'
+                        st.markdown(gallery_html, unsafe_allow_html=True)
 
-                            # 3. إذا أوتوكاد (DWG) -> اعرض تحذير
-                            elif f.name.lower().endswith('.dwg'):
-                                st.warning(f"⚠️ {f.name}\n(ملف غير مقروء، يرجى تحويله لـ PDF)")
-
-                            # 4. باقي الملفات (مثل PDF) -> اعرضها كملف عادي
-                            else:
-                                st.info(f"📄 مرفق: {f.name}")
+                    # 2. عرض الملفات (List)
+                    if files_bucket:
+                        for f in files_bucket:
+                            ext = f.name.split('.')[-1].upper()
+                            icon = "📄"
+                            if "PDF" in ext: icon = "📕"
+                            elif "PPT" in ext: icon = "📊"
+                            elif "XLS" in ext: icon = "📊"
+                            elif "DWG" in ext: icon = "📐"
                             
-                            f.seek(0) # 👈 نرجع المؤشر للبداية عشان الارسال
+                            st.markdown(f'''
+                                <div style="display: flex; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.1);">
+                                    <span style="font-size: 18px; margin-right: 12px;">{icon}</span>
+                                    <span style="font-size: 13px; color: #e0e0e0;">{f.name}</span>
+                                </div>
+                            ''', unsafe_allow_html=True)
+                # --- نهاية كود الصور ---
+
                 st.markdown(prompt)
             
             # 2. تجهيز الصور (رفع + إعادة تعبئة)

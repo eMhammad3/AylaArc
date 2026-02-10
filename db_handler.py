@@ -2,6 +2,8 @@ import os
 import uuid
 from supabase import create_client, Client, ClientOptions
 from dotenv import load_dotenv
+import json
+import re
 
 # تحميل المفاتيح
 load_dotenv()
@@ -218,24 +220,29 @@ def get_project_messages(project_id):
         
         formatted_messages = []
         for msg in response.data:
+            raw_imgs = msg.get("image_urls")
+            final_imgs = []
+
+            if raw_imgs:
+                # 1. إذا كانت قائمة جاهزة
+                if isinstance(raw_imgs, list):
+                    final_imgs = raw_imgs
+                # 2. إذا كانت نص (مهما كان شكله)
+                elif isinstance(raw_imgs, str):
+                    # 🔥 الحل النووي: استخراج أي شي يبدأ بـ http وينتهي بفاصل
+                    # هذا يتجاهل الأقواس [] {} وعلامات التنصيص
+                    final_imgs = re.findall(r'https?://[^\s"\'\,\]\}]+', raw_imgs)
+
             formatted_messages.append({
                 "role": msg["role"],
                 "content": msg["content"],
-                # 👇 التعديل هنا: قمنا بتغيير image_url إلى image_urls
-                # ونستخدم get لضمان عدم حدوث خطأ إذا كانت null
-                "image": msg.get("image_urls") if msg.get("image_urls") else [],
+                "image": final_imgs, 
                 "db_id": msg["id"]
             })
         return formatted_messages
     except Exception as e:
         print(f"Error fetching messages: {e}")
         return []
-
-def delete_message(msg_db_id):
-    try:
-        supabase.table("chat_messages").delete().eq("id", msg_db_id).execute()
-    except Exception as e:
-        print(f"Error deleting message: {e}")
 
 # ==========================================
 # 📂 Storage Functions (Uploads)
