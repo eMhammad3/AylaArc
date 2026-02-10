@@ -39,7 +39,7 @@ CURRENT_PROVIDER = "openrouter"
 # 2. اختر الموديل:
 # عقل الفحص : 'arcee-ai/trinity-large-preview:free'
 # عقل ايلا : 'google/gemini-3-pro-preview'
-CURRENT_MODEL_NAME = 'arcee-ai/trinity-large-preview:free'
+CURRENT_MODEL_NAME = 'google/gemini-3-pro-preview'
 
 # إعدادات التوليد
 GENERATION_CONFIG = {
