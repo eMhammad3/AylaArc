@@ -1303,13 +1303,25 @@ elif st.session_state.app_stage == 'main_chat':
                     new_text = st.text_area("نص الرسالة:", value=message["content"], key=f"edit_area_{i}")
                     c1, c2 = st.columns([1, 1])
                     if c1.button("✅ حفظ", key=f"save_{i}"):
+                        # 1. تحديث النص في الواجهة
                         st.session_state.messages[i]["content"] = new_text
+                        
+                        # 2. 🔥 التحديث في الداتابيس (الحلقة المفقودة)
+                        if "db_id" in message:
+                            db_handler.update_message_content(message["db_id"], new_text)
+                        
+                        # 3. تنظيف ما بعد الرسالة (حذف رد الآيلا القديم من الداتابيس لضمان عدم التكرار)
+                        # نتحقق إذا كان هناك رسائل بعد هذه الرسالة، ونحذفها من الداتابيس لأننا سنولد رد جديد
+                        if i + 1 < len(st.session_state.messages):
+                            next_msgs = st.session_state.messages[i+1:]
+                            for n_msg in next_msgs:
+                                if "db_id" in n_msg:
+                                    db_handler.delete_message(n_msg["db_id"])
+
+                        # 4. قطع الليست في الواجهة لبدء التوليد الجديد
                         st.session_state.messages = st.session_state.messages[:i+1]
                         st.session_state.edit_index = None
                         st.session_state.trigger_generation = True 
-                        st.rerun()
-                    if c2.button("❌ إلغاء", key=f"cancel_{i}"):
-                        st.session_state.edit_index = None
                         st.rerun()
             else:
                 with st.chat_message(role, avatar=avatar):
@@ -1421,15 +1433,26 @@ elif st.session_state.app_stage == 'main_chat':
                     with c1:
                         st.markdown('<div class="tiny-btn">', unsafe_allow_html=True)
                         if st.button("❌", key=f"del_{i}"):
-                            # ... (نفس كود الحذف القديم اللي عندك) ...
+                            # 1. تحديد الرسالة الحالية
                             msg_to_del = st.session_state.messages[i]
+                            
+                            # 2. محاولة حذف الرد الذي يليها (إذا كان من المساعد)
                             if i + 1 < len(st.session_state.messages):
                                 next_msg = st.session_state.messages[i+1]
-                                if next_msg['role'] == 'assistant' and "db_id" in next_msg:
-                                    db_handler.delete_message(next_msg["db_id"])
+                                if next_msg['role'] == 'assistant':
+                                    # حذف من الداتابيس
+                                    if "db_id" in next_msg:
+                                        db_handler.delete_message(next_msg["db_id"])
+                            
+                            # 3. حذف الرسالة الأصلية من الداتابيس
                             if "db_id" in msg_to_del:
                                 db_handler.delete_message(msg_to_del["db_id"])
+                            
+                            # 4. التحديث في الواجهة (نحذف الرسالة وما بعدها لأن السياق انكسر)
+                            # أو نحذف فقط الرسالة وردها.. الخيار لك، هنا سنحذف العنصر وردّه فقط
+                            # لكن الأسهل في ستريم لت هو إعادة الليست لما قبل العنصر
                             st.session_state.messages = st.session_state.messages[:i]
+                            
                             st.rerun()
                         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1529,15 +1552,22 @@ elif st.session_state.app_stage == 'main_chat':
                     f.seek(0) 
 
             # 3. الحفظ بالذاكرة الحية (مع الصور المملوءة)
+            # 3. الحفظ بالذاكرة الحية (مع الصور المملوءة) مبدئياً بدون ID
             st.session_state.messages.append({
                 "role": "user", 
                 "content": prompt, 
                 "image": uploaded_files 
             })
             
-            # 4. الحفظ بالداتابيس
+            # 4. الحفظ بالداتابيس 🔥 والتقاط الـ ID فوراً 🔥
             if 'id' in st.session_state.project_data:
-                db_handler.save_message(st.session_state.project_data['id'], "user", prompt, image_urls)
+                # نحفظ الرسالة
+                msg_id = db_handler.save_message(st.session_state.project_data['id'], "user", prompt, image_urls)
+                
+                # 🔥 هذا هو السطر السحري: نحدث الرسالة اللي في الشاشة ونعطيها الـ ID فوراً
+                # حتى لو ضغطت حذف بعد ثانية، الكود سيعرف أي سطر يحذف من الداتابيس
+                if msg_id:
+                    st.session_state.messages[-1]["db_id"] = msg_id
 
             st.session_state.trigger_generation = True
             st.session_state.upload_key = str(time.time())

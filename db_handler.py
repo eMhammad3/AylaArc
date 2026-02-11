@@ -244,6 +244,28 @@ def get_project_messages(project_id):
         print(f"Error fetching messages: {e}")
         return []
 
+def delete_message(message_id):
+    """
+    حذف رسالة محددة من قاعدة البيانات
+    """
+    try:
+        supabase.table("chat_messages").delete().eq("id", message_id).execute()
+        return {"success": True}
+    except Exception as e:
+        print(f"Error deleting message: {e}")
+        return {"error": str(e)}
+
+def update_message_content(message_id, new_content):
+    """
+    تحديث نص رسالة موجودة في قاعدة البيانات
+    """
+    try:
+        supabase.table("chat_messages").update({"content": new_content}).eq("id", message_id).execute()
+        return {"success": True}
+    except Exception as e:
+        print(f"Error updating message: {e}")
+        return {"error": str(e)}
+
 # ==========================================
 # 📂 Storage Functions (Uploads)
 # ==========================================
